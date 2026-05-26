@@ -18,8 +18,10 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' //spotify Oauth연동을 위한 implementation
 	// 2. MySQL Driver: MySQL 데이터베이스 연결
     runtimeOnly 'com.mysql:mysql-connector-j'
 
