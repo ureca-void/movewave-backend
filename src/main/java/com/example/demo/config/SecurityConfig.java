@@ -49,7 +49,7 @@ public class SecurityConfig {
                             String redirectUrl = request.getParameter("redirect");
 
                             if (redirectUrl == null || redirectUrl.isEmpty()) {
-                                redirectUrl = "http://127.0.0.1:5500/index.html"; // 기본값
+                                redirectUrl = "http://127.0.0.1:5173/"; // 기본값
                             }
 
                             response.sendRedirect(redirectUrl);
@@ -66,7 +66,7 @@ public class SecurityConfig {
                             }
 
                             if (redirectUrl == null || redirectUrl.contains("/login")) {
-                                redirectUrl = "http://127.0.0.1:5500/index.html"; // 최후의 보루
+                                redirectUrl = "http://127.0.0.1:5173/"; // 최후의 보루
                             }
 
                             // 에러 페이지로 보내지 않고 원래 페이지로 리다이렉트
@@ -84,7 +84,7 @@ public class SecurityConfig {
 
                             // 파라미터가 없으면 기본 메인 페이지로, 있으면 해당 주소로 이동
                             if (redirectUrl == null || redirectUrl.isEmpty()) {
-                                redirectUrl = "http://127.0.0.1:5500/index.html";
+                                redirectUrl = "http://127.0.0.1:5173/";
                             }
 
                             response.sendRedirect(redirectUrl);
@@ -100,7 +100,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://127.0.0.1:5500"));
+        config.setAllowedOrigins(List.of("http://127.0.0.1:5173/"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowCredentials(true);
         config.setExposedHeaders(List.of("Set-Cookie"));
