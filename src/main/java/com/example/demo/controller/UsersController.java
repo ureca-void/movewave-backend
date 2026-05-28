@@ -39,6 +39,13 @@ public class UsersController {
             userInfo.put("spotifyId", oAuth2User.getAttribute("id"));
             userInfo.put("name", oAuth2User.getAttribute("display_name"));
             userInfo.put("email", oAuth2User.getAttribute("email"));
+            List<Map<String, Object>> images = (List<Map<String, Object>>) oAuth2User.getAttribute("images");
+            String imageUrl = null;
+            if (images != null && !images.isEmpty()) {
+                // 보통 첫 번째 이미지(index 0)가 가장 큰 해상도입니다.
+                imageUrl = (String) images.get(0).get("url");
+            }
+            userInfo.put("avatar",imageUrl);
             userInfo.put("isLoggedIn", true);
 
             // 3. 만료 시 자동 갱신되는 AccessToken 가져오기 ⭐

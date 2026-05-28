@@ -46,7 +46,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             newMember.setUserName(name);
             newMember.setUserMail(email);
             usersMapper.insertMember(newMember);
-            System.out.println("DB 저장 완료!");
         } else {
             // [동작 흐름 5-B] 있다면? 닉네임이나 이메일이 바뀌었을 수 있으니 갱신 (Update)
             existingMember.setUserName(name);
