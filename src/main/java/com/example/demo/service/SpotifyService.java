@@ -90,37 +90,37 @@ public class SpotifyService {
     // =========================
     public List<Map<String, Object>> getUrecaPicks() {
         return List.of(
-                Map.of(
+        		Map.of(
                         "id", "u1",
                         "title", "404 (New Era)",
                         "description", "KiiiKiii",
                         "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e028c77cd2419fcdb44198262a3"
                 ),
-                Map.of(
+        		Map.of(
                         "id", "u2",
                         "title", "Way Back Home",
                         "description", "SHAUN",
                         "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e029bb453695e0776ceb13576f3"
                 ),
-                Map.of(
+        		Map.of(
                         "id", "u3",
                         "title", "Cosmic",
                         "description", "Red Velvet",
                         "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e0233f4f800b259791768d04f40"
                 ),
-                Map.of(
+        		Map.of(
                         "id", "u4",
                         "title", "toxic till the end",
                         "description", "ROSÉ",
                         "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02a9fb6e00986e42ad4764b1f3"
                 ),
-                Map.of(
+        		Map.of(
                         "id", "u5",
                         "title", "사랑하게 될 거야",
                         "description", "한로로",
                         "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02041c2df6c6417db26f4133d4"
                 ),
-                Map.of(
+        		Map.of(
                         "id", "u6",
                         "title", "타임캡슐",
                         "description", "다비치",
