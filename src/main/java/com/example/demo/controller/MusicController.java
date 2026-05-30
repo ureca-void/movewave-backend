@@ -29,9 +29,9 @@ public class MusicController {
         return spotifyService.getPopularTracks(20); 
     }
 
-    @GetMapping("/spotify/access-token")
-    public List<Map<String, Object>> getMusicStats() {
-        // 인기 곡 데이터를 가져와서 반환
-        return spotifyService.getPopularTracks(20); 
-    }
+//    @GetMapping("/spotify/access-token")
+//    public List<Map<String, Object>> getMusicStats() {
+//        // 인기 곡 데이터를 가져와서 반환
+//        return spotifyService.getPopularTracks(20); 
+//    }
 }

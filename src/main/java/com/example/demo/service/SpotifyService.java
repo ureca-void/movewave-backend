@@ -26,6 +26,7 @@ public class SpotifyService {
     private long tokenExpiredAt = 0;
 
     private final Map<String, CachedList> cache = new HashMap<>();
+    private final Map<String, List<String>> artistGenreCache = new HashMap<>();
 
     public SpotifyService() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -1192,8 +1193,8 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
 	
 	    Number popularity = (Number) track.get("popularity");
 	    int popularityScore = popularity == null ? 0 : popularity.intValue();
-	    List<String> genres = getArtistGenres(artistId);
-	    String genre = genres.isEmpty() ? "Unknown" : genres.get(0);
+	    String genre = resolvePrimaryGenre(artistId);
+	    String weather = resolveWeather(id);
 	
 	    Map<String, Object> card = new LinkedHashMap<>();
 	    card.put("id", id);
@@ -1208,6 +1209,7 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
 	    card.put("durationMs", durationMs);
 	    card.put("popularity", popularityScore);
 	    card.put("genre", genre);
+	    card.put("weather", weather);
 	
 	    return card;
 	}
@@ -1216,6 +1218,11 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
     private List<String> getArtistGenres(String artistId) {
         if (artistId == null || artistId.isBlank()) {
             return List.of();
+        }
+
+        List<String> cachedGenres = artistGenreCache.get(artistId);
+        if (cachedGenres != null) {
+            return cachedGenres;
         }
 
         String accessToken = getAccessToken();
@@ -1256,12 +1263,29 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
                 }
             }
 
+            artistGenreCache.put(artistId, List.copyOf(genres));
             return genres;
 
         } catch (HttpStatusCodeException e) {
             printSpotifyHttpError("Spotify 아티스트 장르 조회 실패", e);
             return List.of();
         }
+    }
+
+    private String resolvePrimaryGenre(String artistId) {
+        List<String> genres = getArtistGenres(artistId);
+        return genres.isEmpty() ? "Unknown" : genres.get(0);
+    }
+
+    private String resolveWeather(String trackId) {
+        int hash = trackId == null ? 0 : trackId.hashCode();
+        double v1 = Math.abs(hash % 100) / 100.0;
+
+        if (v1 >= 0.8) return "Sunny";
+        if (v1 >= 0.6) return "Cloudy";
+        if (v1 >= 0.4) return "Foggy";
+        if (v1 >= 0.2) return "Rainy";
+        return "Stormy";
     }
 
     // =========================
