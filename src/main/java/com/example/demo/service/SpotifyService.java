@@ -323,9 +323,6 @@ public class SpotifyService {
             }
         }
         
-     // Valence 값 (0.0 ~ 1.0)
-        Number valence = (Number) track.getOrDefault("valence", 0.5);
-        double v = valence.doubleValue();
         
         int hash = id.hashCode();
         double v1 = Math.abs(hash % 100) / 100.0;
