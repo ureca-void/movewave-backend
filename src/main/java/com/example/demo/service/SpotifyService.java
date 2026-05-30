@@ -207,6 +207,8 @@ public class SpotifyService {
                 }
 
                 result.add(convertTrackToCard(track, result.size() + 1));
+                
+                
             }
 
             return result;
@@ -216,6 +218,27 @@ public class SpotifyService {
             System.out.println("Spotify 인기 데이터 조회 실패 응답: " + e.getResponseBodyAsString());
             throw new RuntimeException("Spotify 인기 데이터 조회 실패", e);
         }
+    }
+ // 아티스트 ID로 장르 리스트 조회
+    @SuppressWarnings("unchecked")
+    public List<String> getArtistGenres(String artistId) {
+        String accessToken = getAccessToken();
+        String url = "https://api.spotify.com/v1/artists" + artistId; 
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, request, Map.class);
+            Map<String, Object> body = response.getBody();
+            if (body != null && body.containsKey("genres")) {
+                return (List<String>) body.get("genres");
+            }
+        } catch (Exception e) {
+            System.out.println("아티스트 장르 조회 실패: " + artistId);
+        }
+        return Collections.emptyList();
     }
 
     // =========================
