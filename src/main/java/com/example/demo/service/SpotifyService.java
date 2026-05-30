@@ -1122,6 +1122,9 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
 	        artistName = Objects.toString(artists.get(0).get("name"), "Unknown Artist");
 	        artistId = Objects.toString(artists.get(0).get("id"), "");
 	    }
+	    
+	    List<String> genres = getArtistGenres(artistId);
+	    String genre = genres.isEmpty() ? "Unknown" : genres.get(0);
 
 	    String cover = "";
 
@@ -1161,9 +1164,11 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
 	            (List<Map<String, Object>>) track.get("artists");
 	
 	    String artistName = "Unknown Artist";
+	    String artistId = "";
 	
 	    if (artists != null && !artists.isEmpty()) {
 	        artistName = Objects.toString(artists.get(0).get("name"), "Unknown Artist");
+	        artistId = Objects.toString(artists.get(0).get("id"), "");
 	    }
 	
 	    Map<String, Object> album =
@@ -1187,6 +1192,8 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
 	
 	    Number popularity = (Number) track.get("popularity");
 	    int popularityScore = popularity == null ? 0 : popularity.intValue();
+	    List<String> genres = getArtistGenres(artistId);
+	    String genre = genres.isEmpty() ? "Unknown" : genres.get(0);
 	
 	    Map<String, Object> card = new LinkedHashMap<>();
 	    card.put("id", id);
@@ -1200,9 +1207,62 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
 	    card.put("releaseDate", releaseDate);
 	    card.put("durationMs", durationMs);
 	    card.put("popularity", popularityScore);
+	    card.put("genre", genre);
 	
 	    return card;
 	}
+
+    @SuppressWarnings("unchecked")
+    private List<String> getArtistGenres(String artistId) {
+        if (artistId == null || artistId.isBlank()) {
+            return List.of();
+        }
+
+        String accessToken = getAccessToken();
+
+        String url = UriComponentsBuilder
+                .fromUriString("https://api.spotify.com/v1/artists/{artistId}")
+                .buildAndExpand(artistId)
+                .toUriString();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    Map.class
+            );
+
+            Map<String, Object> body = response.getBody();
+            if (body == null) {
+                return List.of();
+            }
+
+            Object genresObj = body.get("genres");
+            if (!(genresObj instanceof List<?> rawGenres)) {
+                return List.of();
+            }
+
+            List<String> genres = new ArrayList<>();
+            for (Object genre : rawGenres) {
+                String value = Objects.toString(genre, "").trim();
+                if (!value.isEmpty()) {
+                    genres.add(value);
+                }
+            }
+
+            return genres;
+
+        } catch (HttpStatusCodeException e) {
+            printSpotifyHttpError("Spotify 아티스트 장르 조회 실패", e);
+            return List.of();
+        }
+    }
 
     // =========================
     // 검색어 정규화
