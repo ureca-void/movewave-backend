@@ -277,7 +277,7 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
     }
 
     @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, int displayLimit) {
+    public List<Map<String, Object>> searchTracks1(String keyword, int searchLimit, int displayLimit) {
         String accessToken = getAccessToken();
 
         int safeDisplayLimit = Math.min(Math.max(displayLimit, 1), 10);
@@ -1116,9 +1116,11 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
 	            (List<Map<String, Object>>) album.get("artists");
 
 	    String artistName = "Unknown Artist";
+	    String artistId = "";
 
 	    if (artists != null && !artists.isEmpty()) {
 	        artistName = Objects.toString(artists.get(0).get("name"), "Unknown Artist");
+	        artistId = Objects.toString(artists.get(0).get("id"), "");
 	    }
 
 	    String cover = "";
