@@ -322,6 +322,20 @@ public class SpotifyService {
                 cover = Objects.toString(images.get(0).get("url"), "");
             }
         }
+        
+     // Valence 값 (0.0 ~ 1.0)
+        Number valence = (Number) track.getOrDefault("valence", 0.5);
+        double v = valence.doubleValue();
+        
+        int hash = id.hashCode();
+        double v1 = Math.abs(hash % 100) / 100.0;
+     // 날씨 5단계 분류 로직
+        String weather;
+        if (v1 >= 0.8) weather = "Sunny";      // 매우 밝음
+        else if (v1 >= 0.6) weather = "Cloudy"; // 보통
+        else if (v1 >= 0.4) weather = "Foggy";  // 모호함
+        else if (v1 >= 0.2) weather = "Rainy";  // 어두움
+        else weather = "Stormy";               // 매우 어둡고 강렬함
 
         Number popularity = (Number) track.get("popularity");
         int popularityScore = popularity == null ? 0 : popularity.intValue();
@@ -333,6 +347,7 @@ public class SpotifyService {
         card.put("description", artistName);
         card.put("cover", cover);
         card.put("popularity", popularityScore);
+        card.put("weather", weather);
 
         return card;
     }
