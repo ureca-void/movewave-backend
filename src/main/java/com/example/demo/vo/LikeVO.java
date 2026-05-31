@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LikeVO {
-	private int userId;
+	private String spotifyId;
 	private String musicId;
 	private String savedAt;
 }

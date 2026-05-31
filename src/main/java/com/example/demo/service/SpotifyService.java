@@ -174,7 +174,7 @@ public class SpotifyService {
 	        return result;
 	    } catch (RuntimeException e) {
 	        List<Map<String, Object>> stale = getStaleCache(cacheKey);
-	
+
 	        if (stale != null) {
 	            return stale;
 	        }
