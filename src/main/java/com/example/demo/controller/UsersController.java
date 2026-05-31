@@ -1,17 +1,18 @@
 package com.example.demo.controller;
 
+
+import com.example.demo.service.LikeService;
+import com.example.demo.vo.LikeVO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,50 @@ public class UsersController {
     // 생성자 주입
     public UsersController(OAuth2AuthorizedClientManager authorizedClientManager) {
         this.authorizedClientManager = authorizedClientManager;
+    }
+
+    @Autowired
+    public LikeService likeService;
+
+    @GetMapping("/like")
+    public ResponseEntity<?> showLikes(Authentication authentication) {
+        // 1. 로그인 확인
+        if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "로그인이 필요합니다."));
+        }
+
+        // 2. 유저 정보 추출
+        OAuth2User oAuth2User = oauthToken.getPrincipal();
+        String spotifyId = oAuth2User.getAttribute("id");
+
+        // 3. 데이터 조회 및 반환
+        return ResponseEntity.ok(likeService.getLike(spotifyId));
+    }
+
+    @PostMapping("/like")
+    public Map<String, Object> toggleLike(@RequestBody LikeVO likeVO, Authentication authentication){
+        if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
+            return Map.of("message", "로그인이 필요합니다.");
+        }
+
+        OAuth2User oAuth2User = oauthToken.getPrincipal();
+        String spotifyId = oAuth2User.getAttribute("id");
+
+        // 2. 프론트에서 넘어온 likeVO에 서버에서 얻은 진짜 spotifyId를 주입
+        likeVO.setSpotifyId(spotifyId);
+
+        // 3. 서비스 로직 수행
+        if (likeService.add(likeVO)) {
+            return Map.of("message", "좋아요 저장");
+        } else {
+            // 이미 존재해서 제거하는 경우
+            if (likeService.remove(likeVO.getSpotifyId(), likeVO.getMusicId())) {
+                return Map.of("message", "좋아요 취소");
+            }
+        }
+
+        return Map.of("message", "서버 오류");
     }
 
     @GetMapping("/user") // 상위 Mapping이 /api 이므로 실제 주소는 /api/user가 됩니다.

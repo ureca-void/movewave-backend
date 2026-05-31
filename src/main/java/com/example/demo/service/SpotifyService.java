@@ -152,7 +152,7 @@ public class SpotifyService {
 	        return result;
 	    } catch (RuntimeException e) {
 	        List<Map<String, Object>> stale = getStaleCache(cacheKey);
-	
+
 	        if (stale != null) {
 	            return stale;
 	        }
@@ -161,116 +161,116 @@ public class SpotifyService {
 	    }
 	}
 
-
-@SuppressWarnings("unchecked")
-public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, int displayLimit) {
-    String accessToken = getAccessToken();
-
-    int safeDisplayLimit = Math.min(Math.max(displayLimit, 1), 100);
-    int safeSearchLimit = Math.min(Math.max(searchLimit, safeDisplayLimit), 100);
-
-    HttpHeaders headers = new HttpHeaders();
-    headers.setBearerAuth(accessToken);
-
-    HttpEntity<Void> request = new HttpEntity<>(headers);
-
-    Map<String, Map<String, Object>> trackMap = new LinkedHashMap<>();
-
-    try {
-        int spotifyLimit = 10;
-
-        for (int offset = 0; offset < safeSearchLimit; offset += spotifyLimit) {
-            int requestLimit = Math.min(spotifyLimit, safeSearchLimit - offset);
-
-            String url = UriComponentsBuilder
-                    .fromUriString("https://api.spotify.com/v1/search")
-                    .queryParam("q", keyword)
-                    .queryParam("type", "track")
-                    .queryParam("market", "KR")
-                    .queryParam("limit", requestLimit)
-                    .queryParam("offset", offset)
-                    .encode()
-                    .toUriString();
-
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    Map.class
-            );
-
-            Map<String, Object> body = response.getBody();
-
-            if (body == null) {
-                break;
-            }
-
-            Map<String, Object> tracks =
-                    (Map<String, Object>) body.get("tracks");
-
-            if (tracks == null) {
-                break;
-            }
-
-            List<Map<String, Object>> items =
-                    (List<Map<String, Object>>) tracks.get("items");
-
-            if (items == null || items.isEmpty()) {
-                break;
-            }
-
-            for (Map<String, Object> track : items) {
-                String id = Objects.toString(track.get("id"), "");
-
-                if (id.isBlank()) {
-                    continue;
-                }
-
-                trackMap.putIfAbsent(id, track);
-            }
-
-            if (items.size() < requestLimit) {
-                break;
-            }
-
-            if (trackMap.size() >= safeDisplayLimit) {
-                break;
-            }
-        }
-
-        if (trackMap.isEmpty()) {
-            return List.of();
-        }
-
-        List<Map<String, Object>> sortedTracks = new ArrayList<>(trackMap.values());
-
-        sortedTracks.sort((a, b) -> {
-            Number popularityA = (Number) a.get("popularity");
-            Number popularityB = (Number) b.get("popularity");
-
-            int scoreA = popularityA == null ? 0 : popularityA.intValue();
-            int scoreB = popularityB == null ? 0 : popularityB.intValue();
-
-            return Integer.compare(scoreB, scoreA);
-        });
-
-        List<Map<String, Object>> result = new ArrayList<>();
-
-        for (Map<String, Object> track : sortedTracks) {
-            if (result.size() >= safeDisplayLimit) {
-                break;
-            }
-
-            result.add(convertTrackToCard(track, result.size() + 1));
-        }
-
-        return result;
-
-    } catch (HttpStatusCodeException e) {
-        printSpotifyHttpError("Spotify 인기 데이터 조회 실패", e);
-        throw new RuntimeException("Spotify 인기 데이터 조회 실패", e);
-    }
-}
+//
+//@SuppressWarnings("unchecked")
+//public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, int displayLimit) {
+//    String accessToken = getAccessToken();
+//
+//    int safeDisplayLimit = Math.min(Math.max(displayLimit, 1), 100);
+//    int safeSearchLimit = Math.min(Math.max(searchLimit, safeDisplayLimit), 100);
+//
+//    HttpHeaders headers = new HttpHeaders();
+//    headers.setBearerAuth(accessToken);
+//
+//    HttpEntity<Void> request = new HttpEntity<>(headers);
+//
+//    Map<String, Map<String, Object>> trackMap = new LinkedHashMap<>();
+//
+//    try {
+//        int spotifyLimit = 10;
+//
+//        for (int offset = 0; offset < safeSearchLimit; offset += spotifyLimit) {
+//            int requestLimit = Math.min(spotifyLimit, safeSearchLimit - offset);
+//
+//            String url = UriComponentsBuilder
+//                    .fromUriString("https://api.spotify.com/v1/search")
+//                    .queryParam("q", keyword)
+//                    .queryParam("type", "track")
+//                    .queryParam("market", "KR")
+//                    .queryParam("limit", requestLimit)
+//                    .queryParam("offset", offset)
+//                    .encode()
+//                    .toUriString();
+//
+//            ResponseEntity<Map> response = restTemplate.exchange(
+//                    url,
+//                    HttpMethod.GET,
+//                    request,
+//                    Map.class
+//            );
+//
+//            Map<String, Object> body = response.getBody();
+//
+//            if (body == null) {
+//                break;
+//            }
+//
+//            Map<String, Object> tracks =
+//                    (Map<String, Object>) body.get("tracks");
+//
+//            if (tracks == null) {
+//                break;
+//            }
+//
+//            List<Map<String, Object>> items =
+//                    (List<Map<String, Object>>) tracks.get("items");
+//
+//            if (items == null || items.isEmpty()) {
+//                break;
+//            }
+//
+//            for (Map<String, Object> track : items) {
+//                String id = Objects.toString(track.get("id"), "");
+//
+//                if (id.isBlank()) {
+//                    continue;
+//                }
+//
+//                trackMap.putIfAbsent(id, track);
+//            }
+//
+//            if (items.size() < requestLimit) {
+//                break;
+//            }
+//
+//            if (trackMap.size() >= safeDisplayLimit) {
+//                break;
+//            }
+//        }
+//
+//        if (trackMap.isEmpty()) {
+//            return List.of();
+//        }
+//
+//        List<Map<String, Object>> sortedTracks = new ArrayList<>(trackMap.values());
+//
+//        sortedTracks.sort((a, b) -> {
+//            Number popularityA = (Number) a.get("popularity");
+//            Number popularityB = (Number) b.get("popularity");
+//
+//            int scoreA = popularityA == null ? 0 : popularityA.intValue();
+//            int scoreB = popularityB == null ? 0 : popularityB.intValue();
+//
+//            return Integer.compare(scoreB, scoreA);
+//        });
+//
+//        List<Map<String, Object>> result = new ArrayList<>();
+//
+//        for (Map<String, Object> track : sortedTracks) {
+//            if (result.size() >= safeDisplayLimit) {
+//                break;
+//            }
+//
+//            result.add(convertTrackToCard(track, result.size() + 1));
+//        }
+//
+//        return result;
+//
+//    } catch (HttpStatusCodeException e) {
+//        printSpotifyHttpError("Spotify 인기 데이터 조회 실패", e);
+//        throw new RuntimeException("Spotify 인기 데이터 조회 실패", e);
+//    }
+//}
 
     public List<Map<String, Object>> getPopularKpopTracks(int displayLimit) {
         return getPopularTracks(displayLimit);
