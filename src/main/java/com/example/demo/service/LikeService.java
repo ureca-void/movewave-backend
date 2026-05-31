@@ -23,6 +23,14 @@ public class LikeService {
             return false;
         }
     }
+    public boolean exists(LikeVO vo) {
+        LikeVO existing = likeMapper.isLike(vo.getSpotifyId(), vo.getMusicId());
+        if(existing == null) {
+            return likeMapper.insertLike(vo)>0;
+        }else{
+            return false;
+        }
+    }
 
     public boolean remove(String spotifyId, String musicId) {
         return likeMapper.deleteLike(spotifyId,musicId) > 0;

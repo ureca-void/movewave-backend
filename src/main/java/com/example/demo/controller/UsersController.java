@@ -72,6 +72,24 @@ public class UsersController {
 
         return Map.of("message", "서버 오류");
     }
+    @PostMapping("/islike")
+    public Map<String, Object> showHeart(@RequestBody LikeVO likeVO, Authentication authentication){
+        if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
+            return Map.of("result","fail","message", "로그인이 필요합니다.");
+        }
+
+        OAuth2User oAuth2User = oauthToken.getPrincipal();
+        String spotifyId = oAuth2User.getAttribute("id");
+
+        // 2. 프론트에서 넘어온 likeVO에 서버에서 얻은 진짜 spotifyId를 주입
+        likeVO.setSpotifyId(spotifyId);
+        if(likeService.exists(likeVO)){
+            System.out.println(Map.of("result","ok","message","좋아요 함"));
+            return Map.of("result","ok","message","좋아요 함");
+        }
+        System.out.println(Map.of("result","fail","message","좋아요 안함"));
+        return Map.of("result","fail","message","좋아요 안함");
+    }
 
     @GetMapping("/user") // 상위 Mapping이 /api 이므로 실제 주소는 /api/user가 됩니다.
     public Map<String, Object> getUserInfo(Authentication authentication) {
