@@ -58,7 +58,6 @@ public class UsersController {
 
             if (client != null) {
                 String accessToken = client.getAccessToken().getTokenValue();
-                System.out.println("발급된 토큰: " + accessToken);
                 userInfo.put("accessToken", accessToken);
             }
         } else {

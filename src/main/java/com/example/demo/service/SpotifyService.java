@@ -26,6 +26,10 @@ public class SpotifyService {
     private long tokenExpiredAt = 0;
 
     private final Map<String, CachedList> cache = new HashMap<>();
+    private static final int SPOTIFY_SEARCH_LIMIT = 10;
+    private static final int MAX_SEARCH_KEYWORDS = 6;
+    private static final int MAX_PAGES_PER_KEYWORD = 2;
+    private static final int MAX_SEARCH_CANDIDATES = 80;
 
     public SpotifyService() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -86,50 +90,68 @@ public class SpotifyService {
     }
 
     // =========================
-    // Ureca's Pick
-    // 고정 데이터
-    // =========================
-    public List<Map<String, Object>> getUrecaPicks() {
-        return List.of(
-                Map.of(
-                        "id", "u1",
-                        "title", "404 (New Era)",
-                        "description", "KiiiKiii",
-                        "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e028c77cd2419fcdb44198262a3"
-                ),
-                Map.of(
-                        "id", "u2",
-                        "title", "Way Back Home",
-                        "description", "SHAUN",
-                        "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e029bb453695e0776ceb13576f3"
-                ),
-                Map.of(
-                        "id", "u3",
-                        "title", "Cosmic",
-                        "description", "Red Velvet",
-                        "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e0233f4f800b259791768d04f40"
-                ),
-                Map.of(
-                        "id", "u4",
-                        "title", "toxic till the end",
-                        "description", "ROSÉ",
-                        "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02a9fb6e00986e42ad4764b1f3"
-                ),
-                Map.of(
-                        "id", "u5",
-                        "title", "사랑하게 될 거야",
-                        "description", "한로로",
-                        "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02041c2df6c6417db26f4133d4"
-                ),
-                Map.of(
-                        "id", "u6",
-                        "title", "타임캡슐",
-                        "description", "다비치",
-                        "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e0242f191e863eb9f2c9325a6e6"
-                )
-        );
-    }
-
+	// Ureca's Pick
+	// 고정 데이터 - 실제 Spotify id / uri 포함
+	// =========================
+	public List<Map<String, Object>> getUrecaPicks() {
+	    return List.of(
+	            Map.of(
+	                    "id", "24rDDbSlFY9OHrlJb48CRh",
+	                    "uri", "spotify:track:24rDDbSlFY9OHrlJb48CRh",
+	                    "rank", 1,
+	                    "title", "404 (New Era)",
+	                    "description", "KiiiKiii",
+	                    "artist", "KiiiKiii",
+	                    "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e028c77cd2419fcdb44198262a3"
+	            ),
+	            Map.of(
+	                    "id", "3NxuezMdSLgt4OwHzBoUhL",
+	                    "uri", "spotify:track:3NxuezMdSLgt4OwHzBoUhL",
+	                    "rank", 2,
+	                    "title", "Way Back Home",
+	                    "description", "SHAUN",
+	                    "artist", "SHAUN",
+	                    "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e029bb453695e0776ceb13576f3"
+	            ),
+	            Map.of(
+	                    "id", "49ciDis1ofgszcKXKh0Sqb",
+	                    "uri", "spotify:track:49ciDis1ofgszcKXKh0Sqb",
+	                    "rank", 3,
+	                    "title", "Cosmic",
+	                    "description", "Red Velvet",
+	                    "artist", "Red Velvet",
+	                    "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e0233f4f800b259791768d04f40"
+	            ),
+	            Map.of(
+	                    "id", "1z5ebC9238uGoBgzYyvGpQ",
+	                    "uri", "spotify:track:1z5ebC9238uGoBgzYyvGpQ",
+	                    "rank", 4,
+	                    "title", "toxic till the end",
+	                    "description", "ROSÉ",
+	                    "artist", "ROSÉ",
+	                    "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02a9fb6e00986e42ad4764b1f3"
+	            ),
+	            Map.of(
+	                    "id", "3WvM2dIR9iIxMGNMP7WsNw",
+	                    "uri", "spotify:track:3WvM2dIR9iIxMGNMP7WsNw",
+	                    "rank", 5,
+	                    "title", "사랑하게 될 거야",
+	                    "description", "한로로",
+	                    "artist", "한로로",
+	                    "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02041c2df6c6417db26f4133d4"
+	            ),
+	            Map.of(
+	                    "id", "3CQw6HqsBu12wUj89vUQ5M",
+	                    "uri", "spotify:track:3CQw6HqsBu12wUj89vUQ5M",
+	                    "rank", 6,
+	                    "title", "타임캡슐",
+	                    "description", "다비치",
+	                    "artist", "다비치",
+	                    "cover", "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e0242f191e863eb9f2c9325a6e6"
+	            )
+	    );
+	}
+	
     // =========================
 	// Popular
 	// Spotify Search API를 여러 번 호출해서 최대 100개까지 조회
@@ -162,195 +184,118 @@ public class SpotifyService {
 	}
 
 
-@SuppressWarnings("unchecked")
-public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, int displayLimit) {
-    String accessToken = getAccessToken();
-
-    int safeDisplayLimit = Math.min(Math.max(displayLimit, 1), 100);
-    int safeSearchLimit = Math.min(Math.max(searchLimit, safeDisplayLimit), 100);
-
-    HttpHeaders headers = new HttpHeaders();
-    headers.setBearerAuth(accessToken);
-
-    HttpEntity<Void> request = new HttpEntity<>(headers);
-
-    Map<String, Map<String, Object>> trackMap = new LinkedHashMap<>();
-
-    try {
-        int spotifyLimit = 10;
-
-        for (int offset = 0; offset < safeSearchLimit; offset += spotifyLimit) {
-            int requestLimit = Math.min(spotifyLimit, safeSearchLimit - offset);
-
-            String url = UriComponentsBuilder
-                    .fromUriString("https://api.spotify.com/v1/search")
-                    .queryParam("q", keyword)
-                    .queryParam("type", "track")
-                    .queryParam("market", "KR")
-                    .queryParam("limit", requestLimit)
-                    .queryParam("offset", offset)
-                    .encode()
-                    .toUriString();
-
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    Map.class
-            );
-
-            Map<String, Object> body = response.getBody();
-
-            if (body == null) {
-                break;
-            }
-
-            Map<String, Object> tracks =
-                    (Map<String, Object>) body.get("tracks");
-
-            if (tracks == null) {
-                break;
-            }
-
-            List<Map<String, Object>> items =
-                    (List<Map<String, Object>>) tracks.get("items");
-
-            if (items == null || items.isEmpty()) {
-                break;
-            }
-
-            for (Map<String, Object> track : items) {
-                String id = Objects.toString(track.get("id"), "");
-
-                if (id.isBlank()) {
-                    continue;
-                }
-
-                trackMap.putIfAbsent(id, track);
-            }
-
-            if (items.size() < requestLimit) {
-                break;
-            }
-
-            if (trackMap.size() >= safeDisplayLimit) {
-                break;
-            }
-        }
-
-        if (trackMap.isEmpty()) {
-            return List.of();
-        }
-
-        List<Map<String, Object>> sortedTracks = new ArrayList<>(trackMap.values());
-
-        sortedTracks.sort((a, b) -> {
-            Number popularityA = (Number) a.get("popularity");
-            Number popularityB = (Number) b.get("popularity");
-
-            int scoreA = popularityA == null ? 0 : popularityA.intValue();
-            int scoreB = popularityB == null ? 0 : popularityB.intValue();
-
-            return Integer.compare(scoreB, scoreA);
-        });
-
-        List<Map<String, Object>> result = new ArrayList<>();
-
-        for (Map<String, Object> track : sortedTracks) {
-            if (result.size() >= safeDisplayLimit) {
-                break;
-            }
-
-            result.add(convertTrackToCard(track, result.size() + 1));
-        }
-
-        return result;
-
-    } catch (HttpStatusCodeException e) {
-        printSpotifyHttpError("Spotify 인기 데이터 조회 실패", e);
-        throw new RuntimeException("Spotify 인기 데이터 조회 실패", e);
-    }
-}
+	@SuppressWarnings("unchecked")
+	public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, int displayLimit) {
+	    String accessToken = getAccessToken();
+	
+	    int safeDisplayLimit = Math.min(Math.max(displayLimit, 1), 100);
+	    int safeSearchLimit = Math.min(Math.max(searchLimit, safeDisplayLimit), 100);
+	
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setBearerAuth(accessToken);
+	
+	    HttpEntity<Void> request = new HttpEntity<>(headers);
+	
+	    Map<String, Map<String, Object>> trackMap = new LinkedHashMap<>();
+	
+	    try {
+	        int spotifyLimit = 10;
+	
+	        for (int offset = 0; offset < safeSearchLimit; offset += spotifyLimit) {
+	            int requestLimit = Math.min(spotifyLimit, safeSearchLimit - offset);
+	
+	            String url = UriComponentsBuilder
+	                    .fromUriString("https://api.spotify.com/v1/search")
+	                    .queryParam("q", keyword)
+	                    .queryParam("type", "track")
+	                    .queryParam("market", "KR")
+	                    .queryParam("limit", requestLimit)
+	                    .queryParam("offset", offset)
+	                    .encode()
+	                    .toUriString();
+	
+	            ResponseEntity<Map> response = restTemplate.exchange(
+	                    url,
+	                    HttpMethod.GET,
+	                    request,
+	                    Map.class
+	            );
+	
+	            Map<String, Object> body = response.getBody();
+	
+	            if (body == null) {
+	                break;
+	            }
+	
+	            Map<String, Object> tracks =
+	                    (Map<String, Object>) body.get("tracks");
+	
+	            if (tracks == null) {
+	                break;
+	            }
+	
+	            List<Map<String, Object>> items =
+	                    (List<Map<String, Object>>) tracks.get("items");
+	
+	            if (items == null || items.isEmpty()) {
+	                break;
+	            }
+	
+	            for (Map<String, Object> track : items) {
+	                String id = Objects.toString(track.get("id"), "");
+	
+	                if (id.isBlank()) {
+	                    continue;
+	                }
+	
+	                trackMap.putIfAbsent(id, track);
+	            }
+	
+	            if (items.size() < requestLimit) {
+	                break;
+	            }
+	
+	            if (trackMap.size() >= safeDisplayLimit) {
+	                break;
+	            }
+	        }
+	
+	        if (trackMap.isEmpty()) {
+	            return List.of();
+	        }
+	
+	        List<Map<String, Object>> sortedTracks = new ArrayList<>(trackMap.values());
+	
+	        sortedTracks.sort((a, b) -> {
+	            Number popularityA = (Number) a.get("popularity");
+	            Number popularityB = (Number) b.get("popularity");
+	
+	            int scoreA = popularityA == null ? 0 : popularityA.intValue();
+	            int scoreB = popularityB == null ? 0 : popularityB.intValue();
+	
+	            return Integer.compare(scoreB, scoreA);
+	        });
+	
+	        List<Map<String, Object>> result = new ArrayList<>();
+	
+	        for (Map<String, Object> track : sortedTracks) {
+	            if (result.size() >= safeDisplayLimit) {
+	                break;
+	            }
+	
+	            result.add(convertTrackToCard(track, result.size() + 1));
+	        }
+	
+	        return result;
+	
+	    } catch (HttpStatusCodeException e) {
+	        printSpotifyHttpError("Spotify 인기 데이터 조회 실패", e);
+	        throw new RuntimeException("Spotify 인기 데이터 조회 실패", e);
+	    }
+	}
 
     public List<Map<String, Object>> getPopularKpopTracks(int displayLimit) {
         return getPopularTracks(displayLimit);
-    }
-
-    @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, int displayLimit) {
-        String accessToken = getAccessToken();
-
-        int safeDisplayLimit = Math.min(Math.max(displayLimit, 1), 10);
-        int safeSearchLimit = Math.min(Math.max(searchLimit, safeDisplayLimit), 10);
-
-        String url = UriComponentsBuilder
-                .fromUriString("https://api.spotify.com/v1/search")
-                .queryParam("q", keyword)
-                .queryParam("type", "track")
-                .queryParam("market", "KR")
-                .queryParam("limit", safeSearchLimit)
-                .encode()
-                .toUriString();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-
-        try {
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    Map.class
-            );
-
-            Map<String, Object> body = response.getBody();
-
-            if (body == null) {
-                throw new RuntimeException("Spotify 검색 응답이 비어있습니다.");
-            }
-
-            Map<String, Object> tracks =
-                    (Map<String, Object>) body.get("tracks");
-
-            if (tracks == null) {
-                throw new RuntimeException("Spotify tracks 데이터가 없습니다.");
-            }
-
-            List<Map<String, Object>> items =
-                    (List<Map<String, Object>>) tracks.get("items");
-
-            if (items == null || items.isEmpty()) {
-                return List.of();
-            }
-
-            items.sort((a, b) -> {
-                Number popularityA = (Number) a.get("popularity");
-                Number popularityB = (Number) b.get("popularity");
-
-                int scoreA = popularityA == null ? 0 : popularityA.intValue();
-                int scoreB = popularityB == null ? 0 : popularityB.intValue();
-
-                return Integer.compare(scoreB, scoreA);
-            });
-
-            List<Map<String, Object>> result = new ArrayList<>();
-
-            for (Map<String, Object> track : items) {
-                if (result.size() >= safeDisplayLimit) {
-                    break;
-                }
-
-                result.add(convertTrackToCard(track, result.size() + 1));
-            }
-
-            return result;
-
-        } catch (HttpStatusCodeException e) {
-            printSpotifyHttpError("Spotify 인기 데이터 조회 실패", e);
-            throw new RuntimeException("Spotify 인기 데이터 조회 실패", e);
-        }
     }
 
     // =========================
@@ -386,43 +331,51 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
 
         return result;
     }
-
+    
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> searchTracksByKeywordFallback(
-            String keyword,
-            int safeDisplayLimit,
-            String accessToken
-    ) {
-        int pageLimit = Math.min(Math.max(safeDisplayLimit, 1), 10);
+    public List<Map<String, Object>> searchTracksForMood(String keyword, int displayLimit) {
+        String trimmedKeyword = keyword == null ? "" : keyword.trim();
 
-        List<String> searchKeywords = createSearchKeywords(keyword);
-
-        if (searchKeywords.isEmpty()) {
+        if (trimmedKeyword.isEmpty()) {
             return List.of();
         }
 
+        int safeDisplayLimit = Math.min(Math.max(displayLimit, 1), 10);
+
+        String cacheKey = "mood:" + normalizeAliasKey(trimmedKeyword) + ":" + safeDisplayLimit;
+
+        List<Map<String, Object>> cached = getCached(cacheKey);
+
+        if (cached != null) {
+            return cached;
+        }
+
+        String accessToken = getAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
         Map<String, Map<String, Object>> trackMap = new LinkedHashMap<>();
 
-        for (String searchKeyword : searchKeywords) {
-            if (trackMap.size() >= safeDisplayLimit) {
-                break;
-            }
+        try {
+            int spotifyLimit = 10;
+            int maxPages = 2;
 
-            String url = UriComponentsBuilder
-                    .fromUriString("https://api.spotify.com/v1/search")
-                    .queryParam("q", searchKeyword)
-                    .queryParam("type", "track")
-                    .queryParam("market", "KR")
-                    .queryParam("limit", pageLimit)
-                    .encode()
-                    .toUriString();
+            for (int page = 0; page < maxPages; page++) {
+                int offset = page * spotifyLimit;
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(accessToken);
+                String url = UriComponentsBuilder
+                        .fromUriString("https://api.spotify.com/v1/search")
+                        .queryParam("q", trimmedKeyword)
+                        .queryParam("type", "track")
+                        .queryParam("market", "KR")
+                        .queryParam("limit", spotifyLimit)
+                        .queryParam("offset", offset)
+                        .encode()
+                        .toUriString();
 
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            try {
                 ResponseEntity<Map> response = restTemplate.exchange(
                         url,
                         HttpMethod.GET,
@@ -433,147 +386,361 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
                 Map<String, Object> body = response.getBody();
 
                 if (body == null) {
-                    continue;
+                    break;
                 }
 
                 Map<String, Object> tracks =
                         (Map<String, Object>) body.get("tracks");
 
                 if (tracks == null) {
-                    continue;
+                    break;
                 }
 
                 List<Map<String, Object>> items =
                         (List<Map<String, Object>>) tracks.get("items");
 
                 if (items == null || items.isEmpty()) {
-                    continue;
+                    break;
                 }
 
                 for (Map<String, Object> track : items) {
                     String id = Objects.toString(track.get("id"), "");
 
-                    if (id.isEmpty()) {
+                    if (id.isBlank()) {
                         continue;
                     }
 
                     trackMap.putIfAbsent(id, track);
-
-                    if (trackMap.size() >= safeDisplayLimit) {
-                        break;
-                    }
                 }
 
-            } catch (HttpStatusCodeException e) {
-                printSpotifyHttpError("Spotify 검색 실패", e);
-
-                if (e.getStatusCode().value() == 429) {
+                if (items.size() < spotifyLimit) {
                     break;
                 }
             }
-        }
 
-        if (trackMap.isEmpty()) {
-            return List.of();
-        }
-
-        List<Map<String, Object>> sortedTracks = new ArrayList<>(trackMap.values());
-
-        sortedTracks.sort((a, b) -> {
-            int scoreA = calculateSearchScore(a, keyword);
-            int scoreB = calculateSearchScore(b, keyword);
-
-            return Integer.compare(scoreB, scoreA);
-        });
-
-        List<Map<String, Object>> result = new ArrayList<>();
-
-        for (Map<String, Object> track : sortedTracks) {
-            if (result.size() >= safeDisplayLimit) {
-                break;
+            if (trackMap.isEmpty()) {
+                return List.of();
             }
 
-            result.add(convertTrackToCard(track, result.size() + 1));
+            List<Map<String, Object>> sortedTracks = new ArrayList<>(trackMap.values());
+
+            sortedTracks.sort((a, b) -> {
+                int scoreA = calculateMoodSearchScore(a, trimmedKeyword);
+                int scoreB = calculateMoodSearchScore(b, trimmedKeyword);
+
+                return Integer.compare(scoreB, scoreA);
+            });
+
+            List<Map<String, Object>> result = new ArrayList<>();
+
+            for (Map<String, Object> track : sortedTracks) {
+                if (result.size() >= safeDisplayLimit) {
+                    break;
+                }
+
+                result.add(convertTrackToCard(track, result.size() + 1));
+            }
+
+            putCache(cacheKey, result, 60 * 1000L);
+
+            return result;
+
+        } catch (HttpStatusCodeException e) {
+            printSpotifyHttpError("Spotify 감정 추천 검색 실패", e);
+
+            List<Map<String, Object>> stale = getStaleCache(cacheKey);
+
+            if (stale != null) {
+                return stale;
+            }
+
+            return List.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private int calculateMoodSearchScore(Map<String, Object> track, String keyword) {
+        String normalizedKeyword = normalizeSearchText(keyword);
+
+        String title = normalizeSearchText(
+                Objects.toString(track.get("name"), "")
+        );
+
+        List<Map<String, Object>> artists =
+                (List<Map<String, Object>>) track.get("artists");
+
+        StringBuilder artistBuilder = new StringBuilder();
+
+        if (artists != null) {
+            for (Map<String, Object> artist : artists) {
+                artistBuilder.append(" ")
+                        .append(Objects.toString(artist.get("name"), ""));
+            }
         }
 
-        return result;
+        String artistText = normalizeSearchText(artistBuilder.toString());
+
+        Map<String, Object> album =
+                (Map<String, Object>) track.get("album");
+
+        String albumName = "";
+
+        if (album != null) {
+            albumName = normalizeSearchText(
+                    Objects.toString(album.get("name"), "")
+            );
+        }
+
+        int score = 0;
+
+        List<String> words = Arrays.stream(normalizedKeyword.split("\\s+"))
+                .filter(word -> !word.isBlank())
+                .filter(word -> word.length() >= 2)
+                .toList();
+
+        for (String word : words) {
+            if (title.contains(word)) {
+                score += 300;
+            }
+
+            if (artistText.contains(word)) {
+                score += 150;
+            }
+
+            if (albumName.contains(word)) {
+                score += 120;
+            }
+        }
+
+        Number popularity = (Number) track.get("popularity");
+        int popularityScore = popularity == null ? 0 : popularity.intValue();
+
+        score += popularityScore * 3;
+
+        if (containsMoodBadVersionWord(title)) {
+            score -= 1200;
+        }
+
+        if (containsMoodBadVersionWord(albumName)) {
+            score -= 700;
+        }
+
+        return score;
     }
+
+    private boolean containsMoodBadVersionWord(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+
+        List<String> badWords = List.of(
+                "karaoke",
+                "instrumental",
+                "inst",
+                "sped up",
+                "slowed",
+                "remix",
+                "cover",
+                "tribute",
+                "piano version",
+                "nightcore",
+                "8d",
+                "tiktok version"
+        );
+
+        for (String word : badWords) {
+            if (text.contains(word)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+	private List<Map<String, Object>> searchTracksByKeywordFallback(
+	        String keyword,
+	        int safeDisplayLimit,
+	        String accessToken
+	) {
+	    List<String> searchKeywords = createSearchKeywords(keyword);
+	
+	    if (searchKeywords.isEmpty()) {
+	        return List.of();
+	    }
+	
+	    Map<String, Map<String, Object>> trackMap = new LinkedHashMap<>();
+	
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setBearerAuth(accessToken);
+	
+	    HttpEntity<Void> request = new HttpEntity<>(headers);
+	
+	    searchLoop:
+	    for (String searchKeyword : searchKeywords) {
+	        for (int page = 0; page < MAX_PAGES_PER_KEYWORD; page++) {
+	            int offset = page * SPOTIFY_SEARCH_LIMIT;
+	
+	            String url = UriComponentsBuilder
+	                    .fromUriString("https://api.spotify.com/v1/search")
+	                    .queryParam("q", searchKeyword)
+	                    .queryParam("type", "track")
+	                    .queryParam("market", "KR")
+	                    .queryParam("limit", SPOTIFY_SEARCH_LIMIT)
+	                    .queryParam("offset", offset)
+	                    .encode()
+	                    .toUriString();
+	
+	            try {
+	                ResponseEntity<Map> response = restTemplate.exchange(
+	                        url,
+	                        HttpMethod.GET,
+	                        request,
+	                        Map.class
+	                );
+	
+	                Map<String, Object> body = response.getBody();
+	
+	                if (body == null) {
+	                    continue;
+	                }
+	
+	                Map<String, Object> tracks =
+	                        (Map<String, Object>) body.get("tracks");
+	
+	                if (tracks == null) {
+	                    continue;
+	                }
+	
+	                List<Map<String, Object>> items =
+	                        (List<Map<String, Object>>) tracks.get("items");
+	
+	                if (items == null || items.isEmpty()) {
+	                    break;
+	                }
+	
+	                for (Map<String, Object> track : items) {
+	                    String id = Objects.toString(track.get("id"), "");
+	
+	                    if (id.isBlank()) {
+	                        continue;
+	                    }
+	
+	                    trackMap.putIfAbsent(id, track);
+	
+	                    if (trackMap.size() >= MAX_SEARCH_CANDIDATES) {
+	                        break searchLoop;
+	                    }
+	                }
+	
+	                if (items.size() < SPOTIFY_SEARCH_LIMIT) {
+	                    break;
+	                }
+	
+	            } catch (HttpStatusCodeException e) {
+	                printSpotifyHttpError("Spotify 검색 실패", e);
+	
+	                if (e.getStatusCode().value() == 429) {
+	                    break searchLoop;
+	                }
+	            }
+	        }
+	    }
+	
+	    if (trackMap.isEmpty()) {
+	        return List.of();
+	    }
+	
+	    List<Map<String, Object>> sortedTracks = new ArrayList<>(trackMap.values());
+	
+	    sortedTracks.sort((a, b) -> {
+	        int scoreA = calculateSearchScore(a, keyword);
+	        int scoreB = calculateSearchScore(b, keyword);
+	
+	        return Integer.compare(scoreB, scoreA);
+	    });
+	
+	    List<Map<String, Object>> result = new ArrayList<>();
+	
+	    for (Map<String, Object> track : sortedTracks) {
+	        if (result.size() >= safeDisplayLimit) {
+	            break;
+	        }
+	
+	        result.add(convertTrackToCard(track, result.size() + 1));
+	    }
+	
+	    return result;
+	}
 
     // =========================
     // 검색어 후보 생성
     // 최대 4개만 사용해서 429 방지
     // =========================
     private List<String> createSearchKeywords(String keyword) {
-        String trimmedKeyword = keyword == null ? "" : keyword.trim();
+    String trimmedKeyword = keyword == null ? "" : keyword.trim();
 
-        if (trimmedKeyword.isEmpty()) {
-            return List.of();
+    if (trimmedKeyword.isEmpty()) {
+        return List.of();
+    }
+
+    LinkedHashSet<String> keywords = new LinkedHashSet<>();
+
+    List<String> knownTrackAliases = getKnownTrackAliases(trimmedKeyword);
+    List<String> knownTrackArtistAliases = getKnownTrackArtistAliases(trimmedKeyword);
+    List<String> artistAliases = getArtistAliases(trimmedKeyword);
+
+    String normalizedKeyword = normalizeSearchText(trimmedKeyword);
+    String englishKeyword = convertKoreanLoanwordToEnglish(trimmedKeyword);
+
+    // 1순위: 사용자가 입력한 원문
+    addSearchKeyword(keywords, trimmedKeyword);
+
+    // 2순위: 알려진 곡명 + 아티스트 조합
+    if (!knownTrackAliases.isEmpty()) {
+        String koreanTrack = pickFirstAlias(knownTrackAliases);
+        String englishTrack = pickEnglishAlias(knownTrackAliases);
+
+        String koreanArtist = pickFirstAlias(knownTrackArtistAliases);
+        String englishArtist = pickEnglishAlias(knownTrackArtistAliases);
+
+        addSearchKeyword(keywords, koreanTrack + " " + koreanArtist);
+        addSearchKeyword(keywords, englishTrack + " " + englishArtist);
+        addSearchKeyword(keywords, koreanTrack);
+        addSearchKeyword(keywords, englishTrack);
+    }
+
+    // 3순위: 아티스트명 검색
+    if (!artistAliases.isEmpty()) {
+        String koreanArtist = pickFirstAlias(artistAliases);
+        String englishArtist = pickEnglishAlias(artistAliases);
+
+        addSearchKeyword(keywords, koreanArtist);
+        addSearchKeyword(keywords, englishArtist);
+    }
+
+    // 4순위: 정규화 / 영어 변환 검색어
+    addSearchKeyword(keywords, normalizedKeyword);
+    addSearchKeyword(keywords, englishKeyword);
+
+    return keywords.stream()
+            .filter(value -> value != null && !value.isBlank())
+            .limit(MAX_SEARCH_KEYWORDS)
+            .toList();
+    }
+    
+    private void addSearchKeyword(Set<String> keywords, String value) {
+        if (value == null) {
+            return;
         }
 
-        LinkedHashSet<String> keywords = new LinkedHashSet<>();
+        String trimmed = value.trim().replaceAll("\\s+", " ");
 
-        List<String> knownTrackAliases = getKnownTrackAliases(trimmedKeyword);
-        List<String> knownTrackArtistAliases = getKnownTrackArtistAliases(trimmedKeyword);
-        List<String> artistAliases = getArtistAliases(trimmedKeyword);
-
-        if (!knownTrackAliases.isEmpty()) {
-            String koreanTrack = pickFirstAlias(knownTrackAliases);
-            String englishTrack = pickEnglishAlias(knownTrackAliases);
-            String koreanArtist = pickFirstAlias(knownTrackArtistAliases);
-            String englishArtist = pickEnglishAlias(knownTrackArtistAliases);
-
-            if (!koreanTrack.isEmpty() && !koreanArtist.isEmpty()) {
-                keywords.add(koreanTrack + " " + koreanArtist);
-            }
-
-            if (!englishTrack.isEmpty() && !englishArtist.isEmpty()) {
-                keywords.add(englishTrack + " " + englishArtist);
-            }
-
-            if (!koreanTrack.isEmpty()) {
-                keywords.add(koreanTrack);
-            }
-
-            if (!englishTrack.isEmpty()) {
-                keywords.add(englishTrack);
-            }
+        if (trimmed.isBlank()) {
+            return;
         }
 
-        if (!artistAliases.isEmpty()) {
-            String koreanArtist = pickFirstAlias(artistAliases);
-            String englishArtist = pickEnglishAlias(artistAliases);
-
-            if (!koreanArtist.isEmpty()) {
-                keywords.add(koreanArtist);
-            }
-
-            if (!englishArtist.isEmpty()) {
-                keywords.add(englishArtist);
-            }
-
-            if (!englishArtist.isEmpty()) {
-                keywords.add("artist:\"" + englishArtist + "\"");
-            }
-        }
-
-        keywords.add(trimmedKeyword);
-
-        String normalizedKeyword = normalizeSearchText(trimmedKeyword);
-
-        if (!normalizedKeyword.isEmpty()) {
-            keywords.add(normalizedKeyword);
-        }
-
-        String englishKeyword = convertKoreanLoanwordToEnglish(trimmedKeyword);
-
-        if (!englishKeyword.isEmpty()) {
-            keywords.add(englishKeyword);
-        }
-
-        return keywords.stream()
-                .filter(value -> value != null && !value.isBlank())
-                .limit(4)
-                .toList();
+        keywords.add(trimmed);
     }
 
     // =========================
@@ -792,102 +959,286 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
     // 검색 점수 계산
     // =========================
     @SuppressWarnings("unchecked")
-    private int calculateSearchScore(Map<String, Object> track, String keyword) {
-        String normalizedKeyword = normalizeSearchText(keyword);
-        String englishKeyword = convertKoreanLoanwordToEnglish(keyword);
+	private int calculateSearchScore(Map<String, Object> track, String keyword) {
+	    String normalizedKeyword = normalizeSearchText(keyword);
+	    String englishKeyword = convertKoreanLoanwordToEnglish(keyword);
+	
+	    String title = normalizeSearchText(
+	            Objects.toString(track.get("name"), "")
+	    );
+	
+	    String artistText = normalizeSearchText(getArtistText(track));
+	    String albumName = normalizeSearchText(getAlbumName(track));
+	
+	    int score = 0;
+	
+	    List<String> titleAliases = getKnownTrackAliases(keyword);
+	    List<String> artistAliases = getArtistAliases(keyword);
+	    List<String> knownTrackArtistAliases = getKnownTrackArtistAliases(keyword);
+	
+	    boolean isKnownTrackSearch = !titleAliases.isEmpty();
+	    boolean isArtistSearch = !artistAliases.isEmpty() && titleAliases.isEmpty();
+	
+	    // =========================
+	    // 1. 알려진 곡명 alias 점수
+	    // 예: 눈의꽃, 눈의 꽃, Snow Flower
+	    // =========================
+	    for (String titleAlias : titleAliases) {
+	        String normalizedAlias = normalizeSearchText(titleAlias);
+	
+	        if (normalizedAlias.isBlank()) {
+	            continue;
+	        }
+	
+	        if (title.equals(normalizedAlias)) {
+	            score += 6000;
+	        } else if (title.contains(normalizedAlias)) {
+	            score += 3500;
+	        } else if (normalizedAlias.contains(title) && title.length() >= 2) {
+	            score += 1200;
+	        }
+	
+	        score += calculateWordOverlapScore(title, normalizedAlias, 250);
+	    }
+	
+	    // =========================
+	    // 2. 알려진 곡의 원곡/대표 아티스트 점수
+	    // 예: 눈의 꽃 → 박효신
+	    // =========================
+	    for (String artistAlias : knownTrackArtistAliases) {
+	        String normalizedArtistAlias = normalizeSearchText(artistAlias);
+	
+	        if (normalizedArtistAlias.isBlank()) {
+	            continue;
+	        }
+	
+	        if (artistText.equals(normalizedArtistAlias)) {
+	            score += 4000;
+	        } else if (artistText.contains(normalizedArtistAlias)) {
+	            score += 2800;
+	        }
+	
+	        score += calculateWordOverlapScore(artistText, normalizedArtistAlias, 220);
+	    }
+	
+	    // 알려진 곡인데 대표 아티스트가 다르면 커버/동명이곡일 가능성이 높으니 감점
+	    if (isKnownTrackSearch && !knownTrackArtistAliases.isEmpty()
+	            && !containsAnyAlias(artistText, knownTrackArtistAliases)) {
+	        score -= 2200;
+	    }
+	
+	    // =========================
+	    // 3. 아티스트 검색 점수
+	    // 예: 박효신, Park Hyo Shin
+	    // =========================
+	    for (String artistAlias : artistAliases) {
+	        String normalizedArtistAlias = normalizeSearchText(artistAlias);
+	
+	        if (normalizedArtistAlias.isBlank()) {
+	            continue;
+	        }
+	
+	        if (artistText.equals(normalizedArtistAlias)) {
+	            score += 5000;
+	        } else if (artistText.contains(normalizedArtistAlias)) {
+	            score += 3500;
+	        }
+	
+	        score += calculateWordOverlapScore(artistText, normalizedArtistAlias, 250);
+	    }
+	
+	    // =========================
+	    // 4. 일반 텍스트 매칭 점수
+	    // =========================
+	    score += calculateTextMatchScore(title, artistText, normalizedKeyword);
+	
+	    if (!englishKeyword.equals(normalizedKeyword)) {
+	        score += calculateTextMatchScore(title, artistText, englishKeyword);
+	    }
+	
+	    // =========================
+	    // 5. Popularity 점수
+	    // 곡명 정확 검색보다는 아티스트 검색일 때 popularity 영향 크게
+	    // =========================
+	    int popularityScore = getPopularityScore(track);
+	
+	    if (isKnownTrackSearch) {
+	        score += popularityScore * 2;
+	    } else if (isArtistSearch) {
+	        score += popularityScore * 4;
+	    } else {
+	        score += popularityScore * 3;
+	    }
+	
+	    // =========================
+	    // 6. 원하지 않는 버전 감점
+	    // 사용자가 remix/live/cover 등을 직접 검색하지 않았으면 아래 버전은 뒤로 보냄
+	    // =========================
+	    if (containsUnwantedVersionWord(title, normalizedKeyword)) {
+	        score -= 1400;
+	    }
+	
+	    if (containsUnwantedVersionWord(albumName, normalizedKeyword)) {
+	        score -= 700;
+	    }
+	
+	    return score;
+	}
 
-        String title = normalizeSearchText(
-                Objects.toString(track.get("name"), "")
-        );
+    private int calculateTextMatchScore(String title, String artistText, String keyword) {
+    if (keyword == null || keyword.isBlank()) {
+        return 0;
+    }
 
-        List<Map<String, Object>> artists =
-                (List<Map<String, Object>>) track.get("artists");
+    int score = 0;
+    String fullText = (title + " " + artistText).trim();
 
-        StringBuilder artistBuilder = new StringBuilder();
+    if (title.equals(keyword)) {
+        score += 3000;
+    }
 
-        if (artists != null) {
-            for (Map<String, Object> artist : artists) {
-                artistBuilder.append(" ")
-                        .append(Objects.toString(artist.get("name"), ""));
-            }
-        }
+    if (fullText.equals(keyword)) {
+        score += 2500;
+    }
 
-        String artistText = normalizeSearchText(artistBuilder.toString());
+    if (title.contains(keyword)) {
+        score += 1600;
+    }
 
-        int score = 0;
+    if (artistText.contains(keyword)) {
+        score += 1300;
+    }
 
-        List<String> titleAliases = getKnownTrackAliases(keyword);
-        List<String> artistAliases = getArtistAliases(keyword);
-        List<String> knownTrackArtistAliases = getKnownTrackArtistAliases(keyword);
+    if (keyword.contains(title) && title.length() >= 2) {
+        score += 800;
+    }
 
-        for (String titleAlias : titleAliases) {
-            String normalizedAlias = normalizeSearchText(titleAlias);
+    List<String> words = Arrays.stream(keyword.split("\\s+"))
+            .filter(word -> !word.isBlank())
+            .filter(word -> word.length() >= 2)
+            .toList();
 
-            if (title.equals(normalizedAlias)) {
-                score += 2500;
-            }
-
-            if (title.contains(normalizedAlias)) {
-                score += 1200;
-            }
-
-            if (normalizedAlias.contains(title) && title.length() >= 2) {
-                score += 700;
-            }
-        }
-
-        for (String artistAlias : knownTrackArtistAliases) {
-            String normalizedArtistAlias = normalizeSearchText(artistAlias);
-
-            if (artistText.equals(normalizedArtistAlias)) {
-                score += 1500;
-            }
-
-            if (artistText.contains(normalizedArtistAlias)) {
-                score += 1000;
-            }
-        }
-
-        for (String artistAlias : artistAliases) {
-            String normalizedArtistAlias = normalizeSearchText(artistAlias);
-
-            if (artistText.equals(normalizedArtistAlias)) {
-                score += 1500;
-            }
-
-            if (artistText.contains(normalizedArtistAlias)) {
-                score += 1000;
-            }
-        }
-
-        score += calculateTextMatchScore(title, artistText, normalizedKeyword);
-        score += calculateTextMatchScore(title, artistText, englishKeyword);
-
-        Number popularity = (Number) track.get("popularity");
-        int popularityScore = popularity == null ? 0 : popularity.intValue();
-
-        score += Math.min(popularityScore, 100);
-
+    if (words.isEmpty()) {
         return score;
     }
 
-    private int calculateTextMatchScore(String title, String artistText, String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return 0;
-        }
+    int titleMatchCount = 0;
+    int artistMatchCount = 0;
 
-        int score = 0;
-
-        if (title.equals(keyword)) {
+    for (String word : words) {
+        if (title.equals(word)) {
             score += 500;
+            titleMatchCount++;
+        } else if (title.contains(word)) {
+            score += 220;
+            titleMatchCount++;
         }
 
-        if (title.contains(keyword)) {
-            score += 300;
+        if (artistText.equals(word)) {
+            score += 450;
+            artistMatchCount++;
+        } else if (artistText.contains(word)) {
+            score += 180;
+            artistMatchCount++;
+        }
+    }
+
+    if (titleMatchCount == words.size()) {
+        score += 900;
+    }
+
+    if (titleMatchCount + artistMatchCount >= words.size()) {
+        score += 700;
+    }
+
+    if (words.size() >= 2) {
+        String firstWord = words.get(0);
+        String exceptFirst = String.join(" ", words.subList(1, words.size()));
+
+        if (artistText.contains(firstWord) && title.contains(exceptFirst)) {
+            score += 900;
         }
 
-        if (keyword.contains(title) && title.length() >= 2) {
-            score += 150;
+        String lastWord = words.get(words.size() - 1);
+        String exceptLast = String.join(" ", words.subList(0, words.size() - 1));
+
+        if (artistText.contains(lastWord) && title.contains(exceptLast)) {
+            score += 900;
+        }
+    }
+
+    return score;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private String getArtistText(Map<String, Object> track) {
+        List<Map<String, Object>> artists =
+                (List<Map<String, Object>>) track.get("artists");
+
+        if (artists == null || artists.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder artistBuilder = new StringBuilder();
+
+        for (Map<String, Object> artist : artists) {
+            artistBuilder.append(" ")
+                    .append(Objects.toString(artist.get("name"), ""));
+        }
+
+        return artistBuilder.toString().trim();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String getAlbumName(Map<String, Object> track) {
+        Map<String, Object> album =
+                (Map<String, Object>) track.get("album");
+
+        if (album == null) {
+            return "";
+        }
+
+        return Objects.toString(album.get("name"), "");
+    }
+
+    private int getPopularityScore(Map<String, Object> track) {
+        Number popularity = (Number) track.get("popularity");
+        return popularity == null ? 0 : popularity.intValue();
+    }
+
+    private boolean containsAnyAlias(String text, List<String> aliases) {
+        if (text == null || text.isBlank() || aliases == null || aliases.isEmpty()) {
+            return false;
+        }
+
+        String normalizedText = normalizeSearchText(text);
+
+        for (String alias : aliases) {
+            String normalizedAlias = normalizeSearchText(alias);
+
+            if (normalizedAlias.isBlank()) {
+                continue;
+            }
+
+            if (normalizedText.equals(normalizedAlias)) {
+                return true;
+            }
+
+            if (normalizedText.contains(normalizedAlias)) {
+                return true;
+            }
+
+            if (calculateWordOverlapScore(normalizedText, normalizedAlias, 1) > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private int calculateWordOverlapScore(String target, String keyword, int pointPerWord) {
+        if (target == null || keyword == null || target.isBlank() || keyword.isBlank()) {
+            return 0;
         }
 
         List<String> words = Arrays.stream(keyword.split("\\s+"))
@@ -895,33 +1246,46 @@ public List<Map<String, Object>> searchTracks(String keyword, int searchLimit, i
                 .filter(word -> word.length() >= 2)
                 .toList();
 
+        int score = 0;
+
         for (String word : words) {
-            if (title.contains(word)) {
-                score += 80;
-            }
-
-            if (artistText.contains(word)) {
-                score += 70;
-            }
-        }
-
-        if (words.size() >= 2) {
-            String firstWord = words.get(0);
-            String exceptFirst = String.join(" ", words.subList(1, words.size()));
-
-            if (artistText.contains(firstWord) && title.contains(exceptFirst)) {
-                score += 350;
-            }
-
-            String lastWord = words.get(words.size() - 1);
-            String exceptLast = String.join(" ", words.subList(0, words.size() - 1));
-
-            if (artistText.contains(lastWord) && title.contains(exceptLast)) {
-                score += 350;
+            if (target.contains(word)) {
+                score += pointPerWord;
             }
         }
 
         return score;
+    }
+
+    private boolean containsUnwantedVersionWord(String text, String keyword) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+
+        String safeKeyword = keyword == null ? "" : keyword;
+
+        List<String> versionWords = List.of(
+                "karaoke",
+                "instrumental",
+                "inst",
+                "remix",
+                "sped up",
+                "slowed",
+                "live",
+                "cover",
+                "version",
+                "acoustic",
+                "piano",
+                "tribute"
+        );
+
+        for (String word : versionWords) {
+            if (text.contains(word) && !safeKeyword.contains(word)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 	// =========================
