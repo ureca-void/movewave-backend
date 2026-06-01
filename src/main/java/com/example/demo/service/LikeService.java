@@ -33,6 +33,13 @@ public class LikeService {
         LikeVO existing = likeMapper.isLike(vo.getSpotifyId(), vo.getMusicId());
 
         return existing != null;
+
+        if(existing == null) {
+            return false;
+        }else{
+            return true;
+        }
+
     }
 
     // 좋아요 삭제
