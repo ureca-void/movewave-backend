@@ -26,9 +26,9 @@ public class LikeService {
     public boolean exists(LikeVO vo) {
         LikeVO existing = likeMapper.isLike(vo.getSpotifyId(), vo.getMusicId());
         if(existing == null) {
-            return likeMapper.insertLike(vo)>0;
-        }else{
             return false;
+        }else{
+            return true;
         }
     }
 
