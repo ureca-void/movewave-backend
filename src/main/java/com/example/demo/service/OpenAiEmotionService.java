@@ -15,11 +15,11 @@ import java.util.Map;
 @Service
 public class OpenAiEmotionService {
 
-    @Value("${openai.api-key}")
-    private String openAiApiKey;
+	@Value("${OPENAI_API_KEY}")
+	private String openAiApiKey;
 
-    @Value("${openai.model:gpt-5.4-mini}")
-    private String openAiModel;
+	@Value("${OPENAI_MODEL:gpt-5.4-mini}")
+	private String openAiModel;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final JsonMapper objectMapper = JsonMapper.builder().build();
