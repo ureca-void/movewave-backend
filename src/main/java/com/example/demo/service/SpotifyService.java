@@ -303,7 +303,8 @@ public class SpotifyService {
 	            "Cloudy",
 	            "Foggy",
 	            "Rainy",
-	            "Stormy"
+	            "Stormy",
+	            "Snowy"
 	    };
 
 	    int hash = Math.abs(id.hashCode());
