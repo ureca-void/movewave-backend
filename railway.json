@@ -1,0 +1,9 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "chmod +x ./gradlew && ./gradlew clean bootJar -x test"
+  },
+  "deploy": {
+    "startCommand": "java -jar build/libs/app.jar"
+  }
+}
