@@ -1,7 +1,7 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.0.6'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '4.0.6'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.example'
@@ -13,31 +13,54 @@ java {
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' //spotify Oauth연동을 위한 implementation
-	// 2. MySQL Driver: MySQL 데이터베이스 연결
+    // Spring Web
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+
+    // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // Spotify OAuth
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    // MySQL
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    // 3. MyBatis: SQL 매퍼 프레임워크 (Spring Boot 전용 스타터)
+    // MyBatis
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
-    
+
+    // Jackson
     implementation 'tools.jackson.core:jackson-databind'
 
-    // 4. Spring DevTools: 코드 변경 시 자동 재시작 등 개발 편의 도구
+    // DevTools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
-    // 5. Lombok: Getter, Setter, 생성자 자동 생성 (어노테이션 기반)
+    // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+}
+
+/*
+ * Railway에서 실행할 jar 파일 이름 고정
+ */
+bootJar {
+    archiveFileName = "app.jar"
+}
+
+/*
+ * 일반 jar는 만들지 않고 Spring Boot 실행 jar만 생성
+ */
+jar {
+    enabled = false
 }
