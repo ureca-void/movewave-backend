@@ -34,17 +34,6 @@ public interface LikeMapper {
     @Insert("INSERT INTO liked (spotify_id,music_id,title,artist,albumImage,duration) VALUES (#{spotifyId},#{musicId},#{title},#{artist},#{albumImage},#{duration})")
     int insertLike1(LikeVO vo);
 
-    @Insert("""
-        INSERT INTO likes (
-            spotify_id,
-            music_id
-        )
-        VALUES (
-            #{spotifyId},
-            #{musicId}
-        )
-    """)
-    int insertLike(LikeVO likeVO);
 
     @Delete("""
         DELETE FROM likes
