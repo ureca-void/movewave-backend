@@ -27,6 +27,8 @@ dependencies {
 
     // 3. MyBatis: SQL 매퍼 프레임워크 (Spring Boot 전용 스타터)
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
+    
+    implementation 'tools.jackson.core:jackson-databind'
 
     // 4. Spring DevTools: 코드 변경 시 자동 재시작 등 개발 편의 도구
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
