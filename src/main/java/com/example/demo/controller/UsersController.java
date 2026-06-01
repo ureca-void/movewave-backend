@@ -71,6 +71,20 @@ public class UsersController {
 
         return Map.of("message", "서버 오류");
     }
+    @DeleteMapping("/like/{musicId}")
+    public Map<String, Object> deleteLike( @PathVariable String musicId, Authentication authentication){
+        if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
+            return Map.of("result","fail","message", "로그인이 필요합니다.");
+        }
+
+        OAuth2User oAuth2User = oauthToken.getPrincipal();
+        String spotifyId = oAuth2User.getAttribute("id");
+        if (likeService.remove(spotifyId, musicId)) {
+            return Map.of("result","ok","message","좋아요 제거");
+        }
+        return Map.of("result","fail","message","제거 실패");
+    }
+
     @PostMapping("/islike")
     public Map<String, Object> showHeart(@RequestBody LikeVO likeVO, Authentication authentication){
         if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
