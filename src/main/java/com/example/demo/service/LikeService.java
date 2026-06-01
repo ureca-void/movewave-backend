@@ -34,12 +34,6 @@ public class LikeService {
 
         return existing != null;
 
-        if(existing == null) {
-            return false;
-        }else{
-            return true;
-        }
-
     }
 
     // 좋아요 삭제

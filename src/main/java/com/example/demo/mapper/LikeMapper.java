@@ -32,7 +32,7 @@ public interface LikeMapper {
             
     // 2. 처음 로그인한 사용자라면 DB에 인서트
     @Insert("INSERT INTO liked (spotify_id,music_id,title,artist,albumImage,duration) VALUES (#{spotifyId},#{musicId},#{title},#{artist},#{albumImage},#{duration})")
-    int insertLike(LikeVO vo);
+    int insertLike1(LikeVO vo);
 
     @Insert("""
         INSERT INTO likes (
