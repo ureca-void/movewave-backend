@@ -293,6 +293,24 @@ public class SpotifyService {
 	        throw new RuntimeException("Spotify 인기 데이터 조회 실패", e);
 	    }
 	}
+	private String getWeatherByTrackId(String id) {
+	    if (id == null || id.isBlank()) {
+	        return "Unknown";
+	    }
+
+	    String[] weathers = {
+	            "Sunny",
+	            "Cloudy",
+	            "Foggy",
+	            "Rainy",
+	            "Stormy"
+	    };
+
+	    int hash = Math.abs(id.hashCode());
+	    int index = hash % weathers.length;
+
+	    return weathers[index];
+	}
 
     public List<Map<String, Object>> getPopularKpopTracks(int displayLimit) {
         return getPopularTracks(displayLimit);
@@ -1562,6 +1580,7 @@ public class SpotifyService {
 	    card.put("releaseDate", releaseDate);
 	    card.put("durationMs", durationMs);
 	    card.put("popularity", popularityScore);
+	    card.put("weather", getWeatherByTrackId(id));
 	
 	    return card;
 	}
