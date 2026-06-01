@@ -59,7 +59,6 @@ public class UsersController {
 
         // 2. 프론트에서 넘어온 likeVO에 서버에서 얻은 진짜 spotifyId를 주입
         likeVO.setSpotifyId(spotifyId);
-
         // 3. 서비스 로직 수행
         if (likeService.add(likeVO)) {
             return Map.of("message", "좋아요 저장");
@@ -84,10 +83,8 @@ public class UsersController {
         // 2. 프론트에서 넘어온 likeVO에 서버에서 얻은 진짜 spotifyId를 주입
         likeVO.setSpotifyId(spotifyId);
         if(likeService.exists(likeVO)){
-            System.out.println(Map.of("result","ok","message","좋아요 함"));
             return Map.of("result","ok","message","좋아요 함");
         }
-        System.out.println(Map.of("result","fail","message","좋아요 안함"));
         return Map.of("result","fail","message","좋아요 안함");
     }
 

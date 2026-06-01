@@ -15,7 +15,7 @@ public interface LikeMapper {
     LikeVO isLike(String spotifyId,String musicId);
 
     // 2. 처음 로그인한 사용자라면 DB에 인서트
-    @Insert("INSERT INTO liked (spotify_id, music_id) VALUES (#{spotifyId}, #{musicId})")
+    @Insert("INSERT INTO liked (spotify_id,music_id,title,artist,albumImage,duration) VALUES (#{spotifyId},#{musicId},#{title},#{artist},#{albumImage},#{duration})")
     int insertLike(LikeVO vo);
 
     // 3. 이미 가입된 사용자라면 정보를 최신으로 업데이트
