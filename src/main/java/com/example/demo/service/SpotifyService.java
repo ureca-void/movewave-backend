@@ -1310,6 +1310,7 @@ public class SpotifyService {
 	// =========================
 	// Latest
 	// 최신 앨범 기준으로 조회 후, 각 앨범의 첫 번째 트랙을 재생용 데이터로 변환
+	// Spotify 요청 실패 시 stale cache → 실제 이미지 더미 데이터 순서로 반환
 	// =========================
 	@SuppressWarnings("unchecked")
 	public List<Map<String, Object>> getLatestReleases(int displayLimit) {
@@ -1322,16 +1323,16 @@ public class SpotifyService {
 	        return cached;
 	    }
 	
-	    String accessToken = getAccessToken();
-	
-	    HttpHeaders headers = new HttpHeaders();
-	    headers.setBearerAuth(accessToken);
-	
-	    HttpEntity<Void> request = new HttpEntity<>(headers);
-	
 	    List<Map<String, Object>> allAlbums = new ArrayList<>();
 	
 	    try {
+	        String accessToken = getAccessToken();
+	
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setBearerAuth(accessToken);
+	
+	        HttpEntity<Void> request = new HttpEntity<>(headers);
+	
 	        int spotifyLimit = 10;
 	
 	        for (int offset = 0; offset < safeDisplayLimit; offset += spotifyLimit) {
@@ -1382,7 +1383,7 @@ public class SpotifyService {
 	        }
 	
 	        if (allAlbums.isEmpty()) {
-	            return List.of();
+	            return getLatestDummyReleases(safeDisplayLimit);
 	        }
 	
 	        allAlbums.sort((a, b) -> {
@@ -1414,6 +1415,10 @@ public class SpotifyService {
 	            result.add(convertAlbumAndTrackToCard(album, firstTrack, result.size() + 1));
 	        }
 	
+	        if (result.isEmpty()) {
+	            return getLatestDummyReleases(safeDisplayLimit);
+	        }
+	
 	        putCache(cacheKey, result, 10 * 60 * 1000L);
 	
 	        return result;
@@ -1427,8 +1432,168 @@ public class SpotifyService {
 	            return stale;
 	        }
 	
-	        throw new RuntimeException("Spotify 최신 앨범/트랙 검색 실패", e);
+	        return getLatestDummyReleases(safeDisplayLimit);
+	
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	
+	        List<Map<String, Object>> stale = getStaleCache(cacheKey);
+	
+	        if (stale != null) {
+	            return stale;
+	        }
+	
+	        return getLatestDummyReleases(safeDisplayLimit);
 	    }
+	}
+	
+	// =========================
+	// Latest Dummy Data
+	// Spotify API 실패 시 화면이 비지 않도록 실제 Spotify 이미지 / id / uri 데이터 반환
+	// =========================
+	private List<Map<String, Object>> getLatestDummyReleases(int displayLimit) {
+	    List<Map<String, Object>> dummyAlbums = List.of(
+	            createDummyAlbum(
+	                    "dummy-album-1",
+	                    "404 (New Era)",
+	                    "KiiiKiii",
+	                    "2026-06-01",
+	                    "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e028c77cd2419fcdb44198262a3"
+	            ),
+	            createDummyAlbum(
+	                    "dummy-album-2",
+	                    "Way Back Home",
+	                    "SHAUN",
+	                    "2026-05-28",
+	                    "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e029bb453695e0776ceb13576f3"
+	            ),
+	            createDummyAlbum(
+	                    "dummy-album-3",
+	                    "Cosmic",
+	                    "Red Velvet",
+	                    "2026-05-25",
+	                    "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e0233f4f800b259791768d04f40"
+	            ),
+	            createDummyAlbum(
+	                    "dummy-album-4",
+	                    "toxic till the end",
+	                    "ROSÉ",
+	                    "2026-05-20",
+	                    "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02a9fb6e00986e42ad4764b1f3"
+	            ),
+	            createDummyAlbum(
+	                    "dummy-album-5",
+	                    "사랑하게 될 거야",
+	                    "한로로",
+	                    "2026-05-15",
+	                    "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02041c2df6c6417db26f4133d4"
+	            ),
+	            createDummyAlbum(
+	                    "dummy-album-6",
+	                    "타임캡슐",
+	                    "다비치",
+	                    "2026-05-10",
+	                    "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e0242f191e863eb9f2c9325a6e6"
+	            )
+	    );
+	
+	    List<Map<String, Object>> dummyTracks = List.of(
+	            createDummyTrack(
+	                    "24rDDbSlFY9OHrlJb48CRh",
+	                    "spotify:track:24rDDbSlFY9OHrlJb48CRh",
+	                    "404 (New Era)",
+	                    "KiiiKiii"
+	            ),
+	            createDummyTrack(
+	                    "3NxuezMdSLgt4OwHzBoUhL",
+	                    "spotify:track:3NxuezMdSLgt4OwHzBoUhL",
+	                    "Way Back Home",
+	                    "SHAUN"
+	            ),
+	            createDummyTrack(
+	                    "49ciDis1ofgszcKXKh0Sqb",
+	                    "spotify:track:49ciDis1ofgszcKXKh0Sqb",
+	                    "Cosmic",
+	                    "Red Velvet"
+	            ),
+	            createDummyTrack(
+	                    "1z5ebC9238uGoBgzYyvGpQ",
+	                    "spotify:track:1z5ebC9238uGoBgzYyvGpQ",
+	                    "toxic till the end",
+	                    "ROSÉ"
+	            ),
+	            createDummyTrack(
+	                    "3WvM2dIR9iIxMGNMP7WsNw",
+	                    "spotify:track:3WvM2dIR9iIxMGNMP7WsNw",
+	                    "사랑하게 될 거야",
+	                    "한로로"
+	            ),
+	            createDummyTrack(
+	                    "3CQw6HqsBu12wUj89vUQ5M",
+	                    "spotify:track:3CQw6HqsBu12wUj89vUQ5M",
+	                    "타임캡슐",
+	                    "다비치"
+	            )
+	    );
+	
+	    List<Map<String, Object>> result = new ArrayList<>();
+	
+	    for (int i = 0; i < dummyAlbums.size(); i++) {
+	        if (result.size() >= displayLimit) {
+	            break;
+	        }
+	
+	        Map<String, Object> album = dummyAlbums.get(i);
+	        Map<String, Object> track = dummyTracks.get(i);
+	
+	        result.add(convertAlbumAndTrackToCard(album, track, result.size() + 1));
+	    }
+	
+	    return result;
+	}
+
+	private Map<String, Object> createDummyTrack(
+	        String id,
+	        String uri,
+	        String name,
+	        String artistName
+	) {
+	    return Map.of(
+	            "id", id,
+	            "uri", uri,
+	            "name", name,
+	            "artists", List.of(
+	                    Map.of("name", artistName)
+	            ),
+	            "preview_url", "",
+	            "duration_ms", 180000,
+	            "external_urls", Map.of(
+	                    "spotify", "https://open.spotify.com/track/" + id
+	            )
+	    );
+	}
+
+	private Map<String, Object> createDummyAlbum(
+	        String id,
+	        String name,
+	        String artistName,
+	        String releaseDate,
+	        String imageUrl
+	) {
+	    return Map.of(
+	            "id", id,
+	            "name", name,
+	            "release_date", releaseDate,
+	            "artists", List.of(
+	                    Map.of("name", artistName)
+	            ),
+	            "images", List.of(
+	                    Map.of("url", imageUrl)
+	            ),
+	            "external_urls", Map.of(
+	                    "spotify", ""
+	            )
+	    );
 	}
 	
 	// =========================
