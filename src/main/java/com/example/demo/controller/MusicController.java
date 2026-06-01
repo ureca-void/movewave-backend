@@ -26,12 +26,12 @@ public class MusicController {
  // [추가] 프론트에서 fetch('http://localhost:8080/api/music') 할 때 호출되는 곳
     @GetMapping("/music")
     public List<Map<String, Object>> getMusicData() {
-        return spotifyService.getPopularTracks(20); 
+        return spotifyService.getPopularTracks(60); 
     }
 
 //    @GetMapping("/spotify/access-token")
 //    public List<Map<String, Object>> getMusicStats() {
 //        // 인기 곡 데이터를 가져와서 반환
-//        return spotifyService.getPopularTracks(20); 
+//        return spotifyService.getPopularTracks(60); 
 //    }
 }
