@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,16 +16,26 @@ import java.util.Map;
 @Service
 public class OpenAiEmotionService {
 
-	@Value("${OPENAI_API_KEY}")
-	private String openAiApiKey;
+    // application.properties의 openai.api-key 값을 읽음
+    // 값이 없어도 서버가 crash 나지 않도록 : 기본값 처리
+    @Value("${openai.api-key:}")
+    private String openAiApiKey;
 
-	@Value("${OPENAI_MODEL:gpt-5.4-mini}")
-	private String openAiModel;
+    // application.properties의 openai.model 값을 읽음
+    @Value("${openai.model:gpt-5.4-mini}")
+    private String openAiModel;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final JsonMapper objectMapper = JsonMapper.builder().build();
 
     public EmotionAnalyzeResponse analyzeEmotion(String text) {
+        if (openAiApiKey == null || openAiApiKey.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "OpenAI API Key가 설정되지 않았습니다."
+            );
+        }
+
         try {
             Map<String, Object> requestBody = createRequestBody(text);
 
@@ -43,8 +54,14 @@ public class OpenAiEmotionService {
             String outputText = extractOutputText(response.getBody());
 
             return objectMapper.readValue(outputText, EmotionAnalyzeResponse.class);
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("OpenAI 감정 분석 실패: " + e.getMessage(), e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "OpenAI 감정 분석 실패: " + e.getMessage(),
+                    e
+            );
         }
     }
 
