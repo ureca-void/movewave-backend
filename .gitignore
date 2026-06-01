@@ -25,6 +25,7 @@ application-local.yml
 application-local.yaml
 
 # STS / Eclipse
+.metadata/
 .apt_generated/
 .classpath
 .factorypath
