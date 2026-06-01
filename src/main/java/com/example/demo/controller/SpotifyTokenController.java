@@ -1,9 +1,9 @@
 package com.example.demo.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,20 +11,29 @@ import java.time.Instant;
 import java.util.Map;
 
 @RestController
-@CrossOrigin(
-        origins = {
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "https://moodwave-fe.vercel.app"
-        },
-        allowCredentials = "true"
-)
 public class SpotifyTokenController {
 
+    private final OAuth2AuthorizedClientService authorizedClientService;
+
+    public SpotifyTokenController(OAuth2AuthorizedClientService authorizedClientService) {
+        this.authorizedClientService = authorizedClientService;
+    }
+
     @GetMapping("/api/spotify/access-token")
-    public ResponseEntity<?> getAccessToken(
-            @RegisteredOAuth2AuthorizedClient("spotify") OAuth2AuthorizedClient authorizedClient
-    ) {
+    public ResponseEntity<?> getAccessToken(Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "message", "Spotify 로그인이 필요합니다."
+            ));
+        }
+
+        OAuth2AuthorizedClient authorizedClient =
+                authorizedClientService.loadAuthorizedClient(
+                        "spotify",
+                        authentication.getName()
+                );
+
         if (authorizedClient == null || authorizedClient.getAccessToken() == null) {
             return ResponseEntity.status(401).body(Map.of(
                     "message", "Spotify access token이 없습니다."
