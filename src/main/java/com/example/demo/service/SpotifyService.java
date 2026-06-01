@@ -14,11 +14,11 @@ import java.util.*;
 @Service
 public class SpotifyService {
 
-    @Value("${spring.security.oauth2.client.registration.spotify.client-id}")
-    private String clientId;
+	@Value("${spring.security.oauth2.client.registration.spotify.client-id:}")
+	private String clientId;
 
-    @Value("${spring.security.oauth2.client.registration.spotify.client-secret}")
-    private String clientSecret;
+	@Value("${spring.security.oauth2.client.registration.spotify.client-secret:}")
+	private String clientSecret;
 
     private final RestTemplate restTemplate;
 
@@ -40,6 +40,11 @@ public class SpotifyService {
     }
 
     public synchronized String getAccessToken() {
+    	if (clientId == null || clientId.isBlank() || clientSecret == null || clientSecret.isBlank()) {
+            throw new RuntimeException("Spotify Client ID 또는 Client Secret이 설정되지 않았습니다.");
+        }
+
+        
         long now = System.currentTimeMillis();
 
         if (cachedAccessToken != null && now < tokenExpiredAt) {
