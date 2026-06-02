@@ -5,6 +5,7 @@ import java.util.Map;
 
 public record EmotionRecommendResponse(
         String emotion,
+        String recommendationIntent,
         String moodLabel,
         String reason,
         List<String> keywords,

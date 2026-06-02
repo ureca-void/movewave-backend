@@ -16,12 +16,9 @@ import java.util.Map;
 @Service
 public class OpenAiEmotionService {
 
-    // application.properties의 openai.api-key 값을 읽음
-    // 값이 없어도 서버가 crash 나지 않도록 : 기본값 처리
     @Value("${openai.api-key:}")
     private String openAiApiKey;
 
-    // application.properties의 openai.model 값을 읽음
     @Value("${openai.model:gpt-5.4-mini}")
     private String openAiModel;
 
@@ -82,9 +79,71 @@ public class OpenAiEmotionService {
                         "role", "system",
                         "content", """
                                 너는 음악 추천 서비스 MOOD WAVE의 감정 분석기다.
-                                사용자의 문장을 분석해서 현재 감정을 하나로 분류해라.
-                                음악 추천에 사용할 Spotify 검색 키워드도 함께 만들어라.
-                                응답은 반드시 지정된 JSON Schema 형식으로만 작성해라.
+
+                                사용자의 문장을 분석해서 반드시 아래 두 가지를 분리해라.
+
+                                1. emotion
+                                - 사용자가 현재 느끼는 감정이다.
+                                - 슬픔, 분노, 불안, 피곤함, 행복, 설렘 등을 판단한다.
+
+                                2. recommendationIntent
+                                - 사용자가 원하는 음악 추천 방향이다.
+                                - 현재 감정과 추천 방향은 다를 수 있다.
+
+                                예시:
+                                - "나 너무 슬퍼"
+                                  => emotion: SAD
+                                  => recommendationIntent: MATCH_MOOD
+
+                                - "나 너무 슬픈데 신나는 노래 추천해줘"
+                                  => emotion: SAD
+                                  => recommendationIntent: UPLIFTING
+
+                                - "나 너무 슬픈데 위로해줘"
+                                  => emotion: SAD
+                                  => recommendationIntent: COMFORT
+
+                                - "나 너무 분노 폭발이야 이 분노를 더 끌어올릴 수 있는 노래 추천해줘"
+                                  => emotion: ANGRY
+                                  => recommendationIntent: ENERGETIC
+
+                                - "나 너무 분노가 치밀어오르는데 날 릴렉스 시켜줄 노래 추천해줘"
+                                  => emotion: ANGRY
+                                  => recommendationIntent: CALM_DOWN
+
+                                - "너무 피곤한데 잠 깨는 노래 추천해줘"
+                                  => emotion: TIRED
+                                  => recommendationIntent: ENERGETIC
+
+                                - "너무 피곤해서 쉬고 싶어"
+                                  => emotion: TIRED
+                                  => recommendationIntent: CALM_DOWN
+
+                                - "불안한데 마음 안정되는 노래 추천해줘"
+                                  => emotion: ANXIOUS
+                                  => recommendationIntent: CALM_DOWN
+
+                                - "불안한데 집중할 수 있는 노래 추천해줘"
+                                  => emotion: ANXIOUS
+                                  => recommendationIntent: FOCUS
+
+                                판단 규칙:
+                                - 감정 단어만 보고 추천 방향을 고정하지 마라.
+                                - "신나는", "기분전환", "텐션", "밝은", "업되는" 표현이 있으면 UPLIFTING으로 판단해라.
+                                - "더 끌어올릴", "폭발", "강렬한", "빡센", "에너지" 표현이 있으면 ENERGETIC으로 판단해라.
+                                - "위로", "토닥", "괜찮아지고 싶어", "힘들어", "따뜻한" 표현이 있으면 COMFORT로 판단해라.
+                                - "진정", "릴렉스", "차분", "잔잔", "가라앉", "편안" 표현이 있으면 CALM_DOWN으로 판단해라.
+                                - "집중", "공부", "작업", "코딩" 표현이 있으면 FOCUS로 판단해라.
+                                - "사랑", "설렘", "연애", "고백", "데이트" 표현이 있으면 ROMANTIC으로 판단해라.
+                                - 특별한 추천 방향이 없으면 현재 감정과 어울리는 MATCH_MOOD로 판단해라.
+
+                                keywords 규칙:
+                                - Spotify 검색에 사용할 짧은 검색어를 만들어라.
+                                - keywords는 8개 이상 10개 이하로 만들어라.
+                                - 전부 비슷한 단어로 만들지 말고 장르, 분위기, 언어를 섞어라.
+                                - 한국 음악 서비스이므로 Korean, K-pop, Korean ballad, Korean indie, Korean R&B 등을 적절히 포함해라.
+                                - recommendationIntent에 맞는 키워드를 우선으로 만들어라.
+                                - 응답은 반드시 지정된 JSON Schema 형식으로만 작성해라.
                                 """
                 ),
                 Map.of(
@@ -118,29 +177,50 @@ public class OpenAiEmotionService {
                 )
         ));
 
+        properties.put("recommendationIntent", Map.of(
+                "type", "string",
+                "enum", List.of(
+                        "MATCH_MOOD",
+                        "UPLIFTING",
+                        "COMFORT",
+                        "CALM_DOWN",
+                        "ENERGETIC",
+                        "FOCUS",
+                        "ROMANTIC",
+                        "NEUTRAL"
+                ),
+                "description", "사용자가 원하는 음악 추천 방향"
+        ));
+
         properties.put("moodLabel", Map.of(
                 "type", "string",
-                "description", "사용자에게 보여줄 한국어 감정 라벨"
+                "description", "사용자에게 보여줄 한국어 감정/추천 방향 라벨"
         ));
 
         properties.put("reason", Map.of(
                 "type", "string",
-                "description", "왜 이 감정으로 판단했는지 한 문장으로 설명"
+                "description", "왜 이 감정과 추천 방향으로 판단했는지 한 문장으로 설명"
         ));
 
         properties.put("keywords", Map.of(
                 "type", "array",
                 "items", Map.of("type", "string"),
-                "minItems", 3,
-                "maxItems", 5,
-                "description", "Spotify 검색에 사용할 짧은 음악 키워드"
+                "minItems", 8,
+                "maxItems", 10,
+                "description", "Spotify 검색에 사용할 짧고 다양한 음악 키워드"
         ));
 
         Map<String, Object> schema = new LinkedHashMap<>();
         schema.put("type", "object");
         schema.put("additionalProperties", false);
         schema.put("properties", properties);
-        schema.put("required", List.of("emotion", "moodLabel", "reason", "keywords"));
+        schema.put("required", List.of(
+                "emotion",
+                "recommendationIntent",
+                "moodLabel",
+                "reason",
+                "keywords"
+        ));
 
         return schema;
     }
