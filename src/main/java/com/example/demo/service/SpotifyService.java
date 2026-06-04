@@ -402,6 +402,7 @@ public class SpotifyService {
                         Map.class
                 );
 
+                
                 Map<String, Object> body = response.getBody();
 
                 if (body == null) {
