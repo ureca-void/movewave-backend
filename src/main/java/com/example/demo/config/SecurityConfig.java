@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -47,7 +48,8 @@ public class SecurityConfig {
             "https://test-three-phi-igcj296q62.vercel.app"
     );
 
-    private static final String DEFAULT_FRONT_URL = "http://127.0.0.1:5173/";
+    @Value("${frontend.url:http://127.0.0.1:5173}")
+    private String defaultFrontUrl;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -76,7 +78,7 @@ public class SecurityConfig {
                             String redirectUrl = getRedirectUrlFromSession(request);
 
                             if (!isAllowedRedirect(redirectUrl)) {
-                                redirectUrl = DEFAULT_FRONT_URL;
+                                redirectUrl = defaultFrontUrl;
                             }
 
                             response.sendRedirect(redirectUrl);
@@ -87,7 +89,7 @@ public class SecurityConfig {
                             String redirectUrl = getRedirectUrlFromSession(request);
 
                             if (!isAllowedRedirect(redirectUrl)) {
-                                redirectUrl = DEFAULT_FRONT_URL;
+                                redirectUrl = defaultFrontUrl;
                             }
 
                             response.sendRedirect(redirectUrl);
@@ -106,7 +108,7 @@ public class SecurityConfig {
                             String redirectUrl = request.getParameter("redirect");
 
                             if (!isAllowedRedirect(redirectUrl)) {
-                                redirectUrl = DEFAULT_FRONT_URL;
+                                redirectUrl = defaultFrontUrl;
                             }
 
                             response.sendRedirect(redirectUrl);
