@@ -17,9 +17,13 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
@@ -29,7 +33,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
@@ -52,7 +58,10 @@ public class SecurityConfig {
     private String defaultFrontUrl;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            ClientRegistrationRepository clientRegistrationRepository
+    ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -69,6 +78,11 @@ public class SecurityConfig {
                 )
 
                 .oauth2Login(oauth -> oauth
+                        .authorizationEndpoint(authorization -> authorization
+                                .authorizationRequestResolver(
+                                        authorizationRequestResolver(clientRegistrationRepository)
+                                )
+                        )
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)
                         )
@@ -146,6 +160,61 @@ public class SecurityConfig {
         };
     }
 
+    private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
+            ClientRegistrationRepository clientRegistrationRepository
+    ) {
+        DefaultOAuth2AuthorizationRequestResolver defaultResolver =
+                new DefaultOAuth2AuthorizationRequestResolver(
+                        clientRegistrationRepository,
+                        "/oauth2/authorization"
+                );
+
+        return new OAuth2AuthorizationRequestResolver() {
+            @Override
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
+                return customizeAuthorizationRequest(
+                        defaultResolver.resolve(request),
+                        request
+                );
+            }
+
+            @Override
+            public OAuth2AuthorizationRequest resolve(
+                    HttpServletRequest request,
+                    String clientRegistrationId
+            ) {
+                return customizeAuthorizationRequest(
+                        defaultResolver.resolve(request, clientRegistrationId),
+                        request
+                );
+            }
+        };
+    }
+
+    private OAuth2AuthorizationRequest customizeAuthorizationRequest(
+            OAuth2AuthorizationRequest authorizationRequest,
+            HttpServletRequest request
+    ) {
+        if (authorizationRequest == null) {
+            return null;
+        }
+
+        String origin = getAllowedRedirectOrigin(request.getParameter("redirect"));
+
+        if (origin == null) {
+            return authorizationRequest;
+        }
+
+        String redirectUri = origin + "/login/oauth2/code/spotify";
+        Map<String, Object> additionalParameters =
+                new LinkedHashMap<>(authorizationRequest.getAdditionalParameters());
+        additionalParameters.put(OAuth2ParameterNames.REDIRECT_URI, redirectUri);
+
+        return OAuth2AuthorizationRequest.from(authorizationRequest)
+                .redirectUri(redirectUri)
+                .additionalParameters(additionalParameters)
+                .build();
+    }
     private String getRedirectUrlFromSession(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
 
@@ -159,21 +228,27 @@ public class SecurityConfig {
         return redirectUrl;
     }
 
-    private boolean isAllowedRedirect(String redirectUrl) {
+    private String getAllowedRedirectOrigin(String redirectUrl) {
         if (redirectUrl == null || redirectUrl.isBlank()) {
-            return false;
+            return null;
         }
 
         try {
             URI uri = URI.create(redirectUrl);
             String origin = uri.getScheme() + "://" + uri.getAuthority();
 
-            return ALLOWED_FRONT_ORIGINS.contains(origin)
-                    || origin.endsWith(".vercel.app");
+            if (ALLOWED_FRONT_ORIGINS.contains(origin) || origin.endsWith(".vercel.app")) {
+                return origin;
+            }
 
+            return null;
         } catch (Exception e) {
-            return false;
+            return null;
         }
+    }
+
+    private boolean isAllowedRedirect(String redirectUrl) {
+        return getAllowedRedirectOrigin(redirectUrl) != null;
     }
 
     // 프론트엔드에서 백엔드 API 요청 허용
