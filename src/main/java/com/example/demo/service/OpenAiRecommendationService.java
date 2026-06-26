@@ -117,7 +117,8 @@ public class OpenAiRecommendationService {
                                             3. keywords
                                             - 이 취향과 비슷한 곡을 Spotify에서 찾기 위한 검색어다.
                                             - keywords는 8개 이상 10개 이하로 작성한다.
-                                            - 한국 음악 서비스이므로 Korean, K-pop, Korean R&B, Korean indie 등을 적절히 포함한다.
+                                            - dominantGenre가 K-pop일 때만 K-pop 인기곡, K-pop 아티스트, Korean pop 키워드를 포함한다.
+                                            - dominantGenre가 K-pop이 아니면 K-pop 키워드를 섞지 말고 해당 장르와 분위기에 맞는 키워드만 작성한다.
 
                                             판단 규칙:
                                             - 곡 제목만으로 단정하지 말고 아티스트와 전체 재생 패턴을 함께 본다.

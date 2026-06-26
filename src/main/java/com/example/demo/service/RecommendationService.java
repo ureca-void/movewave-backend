@@ -134,15 +134,13 @@ public class RecommendationService {
 
         TasteAnalysisResponse normalizedAnalysis = normalizeTasteAnalysis(analysis, sourceTracks);
 
-        boolean kpopTaste = isKpopText(normalizedAnalysis.dominantGenre())
-                || (normalizedAnalysis.keywords() != null
-                && normalizedAnalysis.keywords().stream().anyMatch(this::isKpopText));
+        boolean kpopTaste = isKpopText(normalizedAnalysis.dominantGenre());
 
         List<String> keywords = kpopTaste
                 ? createPopularKpopKeywords()
                 : mergeKeywords(
                 createTasteBaseKeywords(normalizedAnalysis),
-                normalizedAnalysis.keywords()
+                removeKpopKeywords(normalizedAnalysis.keywords())
         );
 
         List<Map<String, Object>> tracks = collectDiverseTracks(
@@ -238,14 +236,12 @@ public class RecommendationService {
                 "최근 재생 곡에서 " + dominantGenre + " 계열의 비중이 높게 나타났습니다.",
                 dominantGenre,
                 List.of(
-                        dominantGenre + " Korean music",
+                        dominantGenre + " music",
+                        "popular " + dominantGenre,
+                        dominantGenre + " hits",
                         dominantGenre + " playlist",
-                        "Korean " + dominantGenre,
-                        "K-pop " + dominantGenre,
-                        "Korean R&B",
-                        "Korean indie",
-                        "mood playlist",
-                        "chill Korean music"
+                        "best " + dominantGenre,
+                        "new " + dominantGenre
                 ),
                 genreStats,
                 weatherStats
@@ -286,11 +282,22 @@ public class RecommendationService {
         }
 
         return List.of(
-                dominantGenre + " Korean music",
-                "Korean " + dominantGenre,
+                "popular " + dominantGenre,
+                dominantGenre + " hits",
                 dominantGenre + " playlist",
-                moodLabel + " music"
+                moodLabel + " " + dominantGenre + " music"
         );
+    }
+
+    private List<String> removeKpopKeywords(List<String> keywords) {
+        if (keywords == null || keywords.isEmpty()) {
+            return List.of();
+        }
+
+        return keywords.stream()
+                .filter(keyword -> keyword != null && !keyword.isBlank())
+                .filter(keyword -> !isKpopText(keyword))
+                .toList();
     }
 
     private List<String> mergeKeywords(List<String> primaryKeywords, List<String> secondaryKeywords) {
@@ -460,20 +467,22 @@ public class RecommendationService {
         String combinedText = title + " " + artist + " " + album;
         int score = 0;
 
-        if (isLikelyKpopTrack(track)) {
-            score += 80;
-        }
+        if (kpopOnly) {
+            if (isLikelyKpopTrack(track)) {
+                score += 80;
+            }
 
-        if (isLikelyKoreanMusic(track)) {
-            score += 40;
-        }
+            if (isLikelyKoreanMusic(track)) {
+                score += 40;
+            }
 
-        if (containsHangul(combinedText)) {
-            score += 30;
-        }
+            if (containsHangul(combinedText)) {
+                score += 30;
+            }
 
-        if (kpopOnly && isKnownNonKpopArtist(artist)) {
-            score -= 120;
+            if (isKnownNonKpopArtist(artist)) {
+                score -= 120;
+            }
         }
 
         if ("Rain".equals(weatherKey) && containsAny(combinedText, "rain", "rainy", "ballad", "r b", "jazz", "acoustic")) {
