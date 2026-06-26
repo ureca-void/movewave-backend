@@ -19,13 +19,15 @@ public class RecommendationService {
 
     private static final int DEFAULT_RESULT_LIMIT = 100;
     private static final int SEARCH_LIMIT_PER_KEYWORD = 10;
-    private static final int MAX_KEYWORDS_TO_SEARCH = 12;
+    private static final int MAX_KEYWORDS_TO_SEARCH = 20;
     private static final int MAX_ARTIST_DUPLICATE = 3;
     private static final int RECENTLY_PLAYED_LIMIT = 50;
     private static final long RECOMMENDATION_CACHE_TTL_MS = 5 * 60 * 1000L;
 
     private static final Map<String, WeatherProfile> WEATHER_PROFILES = createWeatherProfiles();
     private static final Map<String, String> WEATHER_ALIASES = createWeatherAliases();
+    private static final Set<String> K_POP_ARTIST_KEYWORDS = createKpopArtistKeywords();
+    private static final Set<String> NON_K_POP_ARTIST_KEYWORDS = createNonKpopArtistKeywords();
 
     private final OpenAiRecommendationService openAiRecommendationService;
     private final SpotifyService spotifyService;
@@ -76,7 +78,12 @@ public class RecommendationService {
                 aiProfile.keywords()
         );
 
-        List<Map<String, Object>> tracks = collectDiverseTracks(keywords, safeLimit);
+        List<Map<String, Object>> tracks = collectDiverseTracks(
+                keywords,
+                safeLimit,
+                profile.key(),
+                false
+        );
 
         if (tracks.isEmpty()) {
             tracks = spotifyService.getPopularTracks(safeLimit);
@@ -127,12 +134,23 @@ public class RecommendationService {
 
         TasteAnalysisResponse normalizedAnalysis = normalizeTasteAnalysis(analysis, sourceTracks);
 
-        List<String> keywords = mergeKeywords(
+        boolean kpopTaste = isKpopText(normalizedAnalysis.dominantGenre())
+                || (normalizedAnalysis.keywords() != null
+                && normalizedAnalysis.keywords().stream().anyMatch(this::isKpopText));
+
+        List<String> keywords = kpopTaste
+                ? createPopularKpopKeywords()
+                : mergeKeywords(
                 createTasteBaseKeywords(normalizedAnalysis),
                 normalizedAnalysis.keywords()
         );
 
-        List<Map<String, Object>> tracks = collectDiverseTracks(keywords, safeLimit);
+        List<Map<String, Object>> tracks = collectDiverseTracks(
+                keywords,
+                safeLimit,
+                null,
+                kpopTaste
+        );
 
         if (tracks.isEmpty()) {
             tracks = spotifyService.getPopularTracks(safeLimit);
@@ -263,17 +281,8 @@ public class RecommendationService {
         String dominantGenre = fallbackText(analysis.dominantGenre(), "Pop");
         String moodLabel = fallbackText(analysis.moodLabel(), "mood");
 
-        if (normalizeKey(dominantGenre).contains("kpop")) {
-            return List.of(
-                    "genre:k-pop",
-                    "K-pop hits",
-                    "popular K-pop",
-                    "Korean idol music",
-                    "K-pop girl group",
-                    "K-pop boy group",
-                    "Korean pop chart",
-                    "K-pop playlist"
-            );
+        if (isKpopText(dominantGenre)) {
+            return createPopularKpopKeywords();
         }
 
         return List.of(
@@ -294,6 +303,31 @@ public class RecommendationService {
                 .filter(keyword -> keyword != null && !keyword.isBlank())
                 .limit(MAX_KEYWORDS_TO_SEARCH)
                 .toList();
+    }
+
+    private List<String> createPopularKpopKeywords() {
+        return List.of(
+                "NewJeans",
+                "IVE",
+                "aespa",
+                "LE SSERAFIM",
+                "SEVENTEEN",
+                "NCT DREAM",
+                "TWICE",
+                "Red Velvet",
+                "STAYC",
+                "RIIZE",
+                "BTS",
+                "BLACKPINK",
+                "ENHYPEN",
+                "Stray Kids",
+                "TOMORROW X TOGETHER",
+                "ITZY",
+                "NMIXX",
+                "ILLIT",
+                "KISS OF LIFE",
+                "BABYMONSTER"
+        );
     }
 
     private List<String> normalizeKeywords(List<String> keywords, List<String> fallbackKeywords) {
@@ -320,7 +354,12 @@ public class RecommendationService {
         }
     }
 
-    private List<Map<String, Object>> collectDiverseTracks(List<String> keywords, int resultLimit) {
+    private List<Map<String, Object>> collectDiverseTracks(
+            List<String> keywords,
+            int resultLimit,
+            String weatherKey,
+            boolean kpopOnly
+    ) {
         Map<String, Map<String, Object>> candidateMap = new LinkedHashMap<>();
 
         for (String keyword : keywords.stream().limit(MAX_KEYWORDS_TO_SEARCH).toList()) {
@@ -339,9 +378,17 @@ public class RecommendationService {
         }
 
         List<Map<String, Object>> candidates = new ArrayList<>(candidateMap.values());
+
+        candidates.removeIf(candidate -> !isRecommendedCandidate(candidate, weatherKey, kpopOnly));
+        candidates.sort((a, b) -> Integer.compare(
+                calculateRecommendationScore(b, weatherKey, kpopOnly),
+                calculateRecommendationScore(a, weatherKey, kpopOnly)
+        ));
+
         Map<String, Integer> artistCountMap = new HashMap<>();
         Set<String> usedTrackKeys = new HashSet<>();
         List<Map<String, Object>> result = new ArrayList<>();
+        int maxArtistDuplicate = kpopOnly ? 6 : MAX_ARTIST_DUPLICATE;
 
         for (Map<String, Object> candidate : candidates) {
             if (result.size() >= resultLimit) {
@@ -352,7 +399,7 @@ public class RecommendationService {
             String artistKey = normalizeText(getStringValue(candidate, "artist"));
             int artistCount = artistCountMap.getOrDefault(artistKey, 0);
 
-            if (usedTrackKeys.contains(trackKey) || artistCount >= MAX_ARTIST_DUPLICATE) {
+            if (usedTrackKeys.contains(trackKey) || artistCount >= maxArtistDuplicate) {
                 continue;
             }
 
@@ -379,6 +426,73 @@ public class RecommendationService {
         }
 
         return result;
+    }
+
+    private boolean isRecommendedCandidate(
+            Map<String, Object> track,
+            String weatherKey,
+            boolean kpopOnly
+    ) {
+        String title = normalizeText(getStringValue(track, "title"));
+        String artist = normalizeText(getStringValue(track, "artist"));
+        String album = normalizeText(getStringValue(track, "albumName"));
+        String combinedText = title + " " + artist + " " + album;
+
+        if (title.isBlank() || artist.isBlank()) {
+            return false;
+        }
+
+        if (containsAny(combinedText, "karaoke", "instrumental", "tribute", "cover", "sped up", "slowed")) {
+            return false;
+        }
+
+        return !kpopOnly || isLikelyKpopTrack(track);
+    }
+
+    private int calculateRecommendationScore(
+            Map<String, Object> track,
+            String weatherKey,
+            boolean kpopOnly
+    ) {
+        String title = normalizeText(getStringValue(track, "title"));
+        String artist = normalizeText(getStringValue(track, "artist"));
+        String album = normalizeText(getStringValue(track, "albumName"));
+        String combinedText = title + " " + artist + " " + album;
+        int score = 0;
+
+        if (isLikelyKpopTrack(track)) {
+            score += 80;
+        }
+
+        if (isLikelyKoreanMusic(track)) {
+            score += 40;
+        }
+
+        if (containsHangul(combinedText)) {
+            score += 30;
+        }
+
+        if (kpopOnly && isKnownNonKpopArtist(artist)) {
+            score -= 120;
+        }
+
+        if ("Rain".equals(weatherKey) && containsAny(combinedText, "rain", "rainy", "ballad", "r b", "jazz", "acoustic")) {
+            score += 35;
+        }
+
+        if ("Clouds".equals(weatherKey) && containsAny(combinedText, "dream", "indie", "band", "cloud", "shoegaze")) {
+            score += 30;
+        }
+
+        if ("Clear".equals(weatherKey) && containsAny(combinedText, "summer", "sunny", "bright", "dance", "disco")) {
+            score += 30;
+        }
+
+        if (artist.contains("cloud") && !title.contains("cloud")) {
+            score -= 25;
+        }
+
+        return score;
     }
 
     private Map<String, Object> copyTrackWithRank(Map<String, Object> track, int rank) {
@@ -648,6 +762,89 @@ public class RecommendationService {
         return false;
     }
 
+    private boolean isKpopText(String text) {
+        String normalizedText = normalizeText(text);
+
+        return normalizedText.contains("k pop")
+                || normalizedText.contains("kpop")
+                || normalizedText.contains("korean pop");
+    }
+
+    private boolean isLikelyKpopTrack(Map<String, Object> track) {
+        String title = normalizeText(getStringValue(track, "title"));
+        String artist = normalizeText(getStringValue(track, "artist"));
+        String album = normalizeText(getStringValue(track, "albumName"));
+        String combinedText = title + " " + artist + " " + album;
+
+        if (isKnownKpopArtist(artist)) {
+            return true;
+        }
+
+        if (isKnownNonKpopArtist(artist)) {
+            return false;
+        }
+
+        return containsHangul(combinedText)
+                && containsAny(
+                combinedText,
+                "k pop",
+                "kpop",
+                "idol",
+                "dance",
+                "pop",
+                "girl group",
+                "boy group"
+        );
+    }
+
+    private boolean isLikelyKoreanMusic(Map<String, Object> track) {
+        String title = normalizeText(getStringValue(track, "title"));
+        String artist = normalizeText(getStringValue(track, "artist"));
+        String album = normalizeText(getStringValue(track, "albumName"));
+        String combinedText = title + " " + artist + " " + album;
+
+        return containsHangul(combinedText)
+                || isKnownKpopArtist(artist)
+                || containsAny(
+                combinedText,
+                "korean",
+                "korea",
+                "k pop",
+                "kpop",
+                "seoul"
+        );
+    }
+
+    private boolean isKnownKpopArtist(String artist) {
+        String normalizedArtist = normalizeKey(artist);
+
+        if (normalizedArtist.isBlank()) {
+            return false;
+        }
+
+        return K_POP_ARTIST_KEYWORDS.stream()
+                .anyMatch(normalizedArtist::contains);
+    }
+
+    private boolean isKnownNonKpopArtist(String artist) {
+        String normalizedArtist = normalizeKey(artist);
+
+        if (normalizedArtist.isBlank()) {
+            return false;
+        }
+
+        return NON_K_POP_ARTIST_KEYWORDS.stream()
+                .anyMatch(normalizedArtist::contains);
+    }
+
+    private boolean containsHangul(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+
+        return text.matches(".*[가-힣].*");
+    }
+
     private String createTrackUniqueKey(Map<String, Object> track) {
         String id = getStringValue(track, "id");
 
@@ -721,14 +918,16 @@ public class RecommendationService {
                 "흐린 날의 몽환적이고 부드러운 분위기에 맞춘 추천입니다.",
                 "Dream Pop • Indie • Shoegaze",
                 List.of(
-                        "cloudy Korean indie",
-                        "dream pop Korea",
-                        "shoegaze playlist",
+                        "Korean indie band",
+                        "Korean dream pop",
+                        "Korean shoegaze",
                         "soft Korean band",
-                        "cloudy day music",
+                        "Jannabi",
+                        "THORNAPPLE",
+                        "HYUKOH",
                         "Korean indie rock",
-                        "mellow K-pop",
-                        "dreamy Korean music"
+                        "dreamy Korean music",
+                        "mellow K-pop"
                 )
         ));
 
@@ -739,13 +938,13 @@ public class RecommendationService {
                 "맑은 날의 밝고 경쾌한 에너지를 살리는 추천입니다.",
                 "Pop • Funk • Disco",
                 List.of(
-                        "sunny K-pop",
-                        "bright Korean pop",
+                        "sunny day playlist",
                         "feel good pop",
-                        "Korean funk",
-                        "disco pop playlist",
+                        "bright Korean pop",
                         "summer Korean music",
                         "upbeat K-pop",
+                        "disco pop playlist",
+                        "Korean funk",
                         "happy pop Korea"
                 )
         ));
@@ -828,6 +1027,72 @@ public class RecommendationService {
         aliases.put("haze", "foggy");
 
         return aliases;
+    }
+
+    private static Set<String> createKpopArtistKeywords() {
+        return Set.of(
+                "newjeans",
+                "ive",
+                "aespa",
+                "lesserafim",
+                "le sserafim",
+                "bts",
+                "blackpink",
+                "seventeen",
+                "nct",
+                "nctdream",
+                "twice",
+                "redvelvet",
+                "stayc",
+                "riize",
+                "illit",
+                "gidle",
+                "g idle",
+                "girlsgeneration",
+                "snsd",
+                "straykids",
+                "txt",
+                "tomorrowxtogether",
+                "enhypen",
+                "ateez",
+                "exo",
+                "shinee",
+                "itzy",
+                "nmixx",
+                "zerobaseone",
+                "zb1",
+                "gfriend",
+                "taeyeon",
+                "iu",
+                "akmu",
+                "ive",
+                "cortis",
+                "hearts2hearts",
+                "nayeon",
+                "yena",
+                "jin",
+                "kiiiiii",
+                "kiiikiii"
+        );
+    }
+
+    private static Set<String> createNonKpopArtistKeywords() {
+        return Set.of(
+                "travisscott",
+                "lisaono",
+                "jamestaylor",
+                "khesarilalyadav",
+                "qualitycontrol",
+                "brooklynfunkessentials",
+                "sunnydayservice",
+                "luckydaye",
+                "djkhaled",
+                "arianagrande",
+                "theweeknd",
+                "playboicarti",
+                "dababy",
+                "popsmoke"
+        );
     }
 
     private synchronized <T> T getCached(

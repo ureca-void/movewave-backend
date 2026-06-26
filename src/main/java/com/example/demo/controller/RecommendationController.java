@@ -36,7 +36,7 @@ public class RecommendationController {
     public WeatherRecommendResponse recommendByWeather(
             @RequestParam(defaultValue = "Rain") String weather,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "100") int limit
+            @RequestParam(defaultValue = "10") int limit
     ) {
         WeatherRecommendResponse response =
                 recommendationService.recommendByWeather(weather, FULL_RECOMMENDATION_LIMIT);
@@ -54,7 +54,7 @@ public class RecommendationController {
     public ResponseEntity<?> recommendByTaste(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "100") int limit
+            @RequestParam(defaultValue = "10") int limit
     ) {
         if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
