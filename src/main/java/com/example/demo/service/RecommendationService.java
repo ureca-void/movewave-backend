@@ -1065,7 +1065,6 @@ public class RecommendationService {
                 "taeyeon",
                 "iu",
                 "akmu",
-                "ive",
                 "cortis",
                 "hearts2hearts",
                 "nayeon",
