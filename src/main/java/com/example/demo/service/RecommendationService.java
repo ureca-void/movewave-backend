@@ -20,7 +20,7 @@ public class RecommendationService {
     private static final int DEFAULT_RESULT_LIMIT = 100;
     private static final int SEARCH_LIMIT_PER_KEYWORD = 10;
     private static final int MAX_KEYWORDS_TO_SEARCH = 20;
-    private static final int MAX_ARTIST_DUPLICATE = 2;
+    private static final int MAX_ARTIST_DUPLICATE = 3;
     private static final int RECENTLY_PLAYED_LIMIT = 50;
     private static final long RECOMMENDATION_CACHE_TTL_MS = 5 * 60 * 1000L;
 
