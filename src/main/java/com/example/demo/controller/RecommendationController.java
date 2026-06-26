@@ -12,11 +12,14 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/recommend")
 public class RecommendationController {
+
+    private static final int FULL_RECOMMENDATION_LIMIT = 100;
 
     private final RecommendationService recommendationService;
     private final OAuth2AuthorizedClientManager authorizedClientManager;
@@ -32,14 +35,25 @@ public class RecommendationController {
     @GetMapping("/weather")
     public WeatherRecommendResponse recommendByWeather(
             @RequestParam(defaultValue = "Rain") String weather,
+            @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit
     ) {
-        return recommendationService.recommendByWeather(weather, limit);
+        WeatherRecommendResponse response =
+                recommendationService.recommendByWeather(weather, FULL_RECOMMENDATION_LIMIT);
+
+        return new WeatherRecommendResponse(
+                response.weather(),
+                response.moodLabel(),
+                response.reason(),
+                response.keywords(),
+                sliceTracks(response.tracks(), page, limit)
+        );
     }
 
     @GetMapping("/taste")
     public ResponseEntity<?> recommendByTaste(
             Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit
     ) {
         if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
@@ -61,9 +75,40 @@ public class RecommendationController {
 
         TasteRecommendResponse response = recommendationService.recommendByTaste(
                 client.getAccessToken().getTokenValue(),
-                limit
+                FULL_RECOMMENDATION_LIMIT
         );
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(new TasteRecommendResponse(
+                response.moodLabel(),
+                response.reason(),
+                response.dominantGenre(),
+                response.keywords(),
+                response.genreStats(),
+                response.weatherStats(),
+                response.sourceTracks(),
+                sliceTracks(response.tracks(), page, limit)
+        ));
+    }
+
+    private List<Map<String, Object>> sliceTracks(
+            List<Map<String, Object>> tracks,
+            int page,
+            int limit
+    ) {
+        if (tracks == null || tracks.isEmpty()) {
+            return List.of();
+        }
+
+        int safePage = Math.max(page, 0);
+        int safeLimit = Math.min(Math.max(limit, 1), FULL_RECOMMENDATION_LIMIT);
+        int fromIndex = safePage * safeLimit;
+
+        if (fromIndex >= tracks.size()) {
+            return List.of();
+        }
+
+        int toIndex = Math.min(fromIndex + safeLimit, tracks.size());
+
+        return tracks.subList(fromIndex, toIndex);
     }
 }
