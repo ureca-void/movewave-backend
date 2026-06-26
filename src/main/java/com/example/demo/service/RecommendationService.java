@@ -17,11 +17,12 @@ import java.util.*;
 @Service
 public class RecommendationService {
 
-    private static final int DEFAULT_RESULT_LIMIT = 10;
-    private static final int SEARCH_LIMIT_PER_KEYWORD = 6;
+    private static final int DEFAULT_RESULT_LIMIT = 100;
+    private static final int SEARCH_LIMIT_PER_KEYWORD = 10;
     private static final int MAX_KEYWORDS_TO_SEARCH = 12;
-    private static final int MAX_ARTIST_DUPLICATE = 2;
+    private static final int MAX_ARTIST_DUPLICATE = 3;
     private static final int RECENTLY_PLAYED_LIMIT = 50;
+    private static final long RECOMMENDATION_CACHE_TTL_MS = 5 * 60 * 1000L;
 
     private static final Map<String, WeatherProfile> WEATHER_PROFILES = createWeatherProfiles();
     private static final Map<String, String> WEATHER_ALIASES = createWeatherAliases();
@@ -29,6 +30,10 @@ public class RecommendationService {
     private final OpenAiRecommendationService openAiRecommendationService;
     private final SpotifyService spotifyService;
     private final RestTemplate restTemplate;
+    private final Map<String, CachedRecommendation<WeatherRecommendResponse>> weatherRecommendationCache =
+            new HashMap<>();
+    private final Map<String, CachedRecommendation<TasteRecommendResponse>> tasteRecommendationCache =
+            new HashMap<>();
 
     public RecommendationService(
             OpenAiRecommendationService openAiRecommendationService,
@@ -46,6 +51,12 @@ public class RecommendationService {
     public WeatherRecommendResponse recommendByWeather(String weather, int limit) {
         int safeLimit = normalizeLimit(limit);
         WeatherProfile profile = getWeatherProfile(weather);
+        String cacheKey = "weather:" + profile.key() + ":" + safeLimit;
+        WeatherRecommendResponse cachedResponse = getCached(weatherRecommendationCache, cacheKey);
+
+        if (cachedResponse != null) {
+            return cachedResponse;
+        }
 
         AiRecommendationProfile aiProfile;
 
@@ -71,17 +82,27 @@ public class RecommendationService {
             tracks = spotifyService.getPopularTracks(safeLimit);
         }
 
-        return new WeatherRecommendResponse(
+        WeatherRecommendResponse response = new WeatherRecommendResponse(
                 profile.key(),
                 fallbackText(aiProfile.moodLabel(), profile.title()),
                 fallbackText(aiProfile.reason(), profile.description()),
                 keywords,
                 tracks
         );
+
+        putCached(weatherRecommendationCache, cacheKey, response);
+
+        return response;
     }
 
     public TasteRecommendResponse recommendByTaste(String userAccessToken, int limit) {
         int safeLimit = normalizeLimit(limit);
+        String cacheKey = "taste:" + Integer.toHexString(Objects.hashCode(userAccessToken)) + ":" + safeLimit;
+        TasteRecommendResponse cachedResponse = getCached(tasteRecommendationCache, cacheKey);
+
+        if (cachedResponse != null) {
+            return cachedResponse;
+        }
 
         List<Map<String, Object>> recentSpotifyTracks =
                 fetchRecentlyPlayedSpotifyTracks(userAccessToken, RECENTLY_PLAYED_LIMIT);
@@ -117,7 +138,7 @@ public class RecommendationService {
             tracks = spotifyService.getPopularTracks(safeLimit);
         }
 
-        return new TasteRecommendResponse(
+        TasteRecommendResponse response = new TasteRecommendResponse(
                 normalizedAnalysis.moodLabel(),
                 normalizedAnalysis.reason(),
                 normalizedAnalysis.dominantGenre(),
@@ -127,6 +148,10 @@ public class RecommendationService {
                 sourceTracks,
                 tracks
         );
+
+        putCached(tasteRecommendationCache, cacheKey, response);
+
+        return response;
     }
 
     private int normalizeLimit(int limit) {
@@ -237,6 +262,19 @@ public class RecommendationService {
     private List<String> createTasteBaseKeywords(TasteAnalysisResponse analysis) {
         String dominantGenre = fallbackText(analysis.dominantGenre(), "Pop");
         String moodLabel = fallbackText(analysis.moodLabel(), "mood");
+
+        if (normalizeKey(dominantGenre).contains("kpop")) {
+            return List.of(
+                    "genre:k-pop",
+                    "K-pop hits",
+                    "popular K-pop",
+                    "Korean idol music",
+                    "K-pop girl group",
+                    "K-pop boy group",
+                    "Korean pop chart",
+                    "K-pop playlist"
+            );
+        }
 
         return List.of(
                 dominantGenre + " Korean music",
@@ -792,6 +830,42 @@ public class RecommendationService {
         return aliases;
     }
 
+    private synchronized <T> T getCached(
+            Map<String, CachedRecommendation<T>> cache,
+            String key
+    ) {
+        CachedRecommendation<T> cachedRecommendation = cache.get(key);
+
+        if (cachedRecommendation == null) {
+            return null;
+        }
+
+        if (System.currentTimeMillis() > cachedRecommendation.expiredAt()) {
+            cache.remove(key);
+            return null;
+        }
+
+        return cachedRecommendation.data();
+    }
+
+    private synchronized <T> void putCached(
+            Map<String, CachedRecommendation<T>> cache,
+            String key,
+            T data
+    ) {
+        if (key == null || key.isBlank() || data == null) {
+            return;
+        }
+
+        cache.put(
+                key,
+                new CachedRecommendation<>(
+                        data,
+                        System.currentTimeMillis() + RECOMMENDATION_CACHE_TTL_MS
+                )
+        );
+    }
+
     private record WeatherProfile(
             String key,
             String weather,
@@ -799,6 +873,12 @@ public class RecommendationService {
             String description,
             String genre,
             List<String> keywords
+    ) {
+    }
+
+    private record CachedRecommendation<T>(
+            T data,
+            long expiredAt
     ) {
     }
 }
